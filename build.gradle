@@ -13,16 +13,47 @@ java {
 	}
 }
 
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
 repositories {
 	mavenCentral()
 }
 
 dependencies {
+	// Spring Boot Starter
 	implementation 'org.springframework.boot:spring-boot-starter'
+	
+	// Spring Shell
+	implementation 'org.springframework.shell:spring-shell-starter:3.1.2'
+	
+	// Apache POI for Excel
+	implementation 'org.apache.poi:poi:5.2.4'
+	implementation 'org.apache.poi:poi-scratchpad:5.2.4'
+	
+	// CSV処理
+	implementation 'com.opencsv:opencsv:5.8'
+	
+	// JSON処理
+	implementation 'com.fasterxml.jackson.core:jackson-databind'
+	
+	// Lombok
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+	
+	// Test
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+// 起動タスク設定
+bootRun {
+	standardInput = System.in
 }

@@ -1,0 +1,180 @@
+package com.kos0514.work_report_generator.service;
+
+import com.kos0514.work_report_generator.model.WorkRecord;
+import com.kos0514.work_report_generator.util.DateUtil;
+import lombok.RequiredArgsConstructor;
+import org.apache.poi.hssf.usermodel.HSSFSheet;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.util.List;
+
+/**
+ * 作業報告書の作成と更新に関するビジネスロジックを提供するサービスクラス
+ */
+@Service
+@RequiredArgsConstructor
+public class ReportService {
+
+    private static final Logger logger = LoggerFactory.getLogger(ReportService.class);
+
+    // I社フォーマット用定数（ハードコード）
+    private static final String TARGET_MONTH_CELL = "B7";
+    private static final String CLIENT_NAME_CELL = "C4";
+    private static final String USER_NAME_CELL = "L4";
+    private static final int WORK_START_ROW = 8;
+    private static final int WORK_END_ROW = 38;
+    private static final String DATE_COLUMN = "B";
+    private static final String START_TIME_COLUMN = "D";
+    private static final String END_TIME_COLUMN = "E";
+    private static final String BREAK_TIME_COLUMN = "F";
+    private static final String WORK_CONTENT_COLUMN = "G";
+
+    private final ExcelService excelService;
+    private final CsvService csvService;
+    private final HolidayService holidayService;
+
+    @Value("${work-report.template-file}")
+    private String templateFile;
+
+    @Value("${work-report.output-dir}")
+    private String outputDir;
+
+    @Value("${work-report.csv-dir}")
+    private String csvDir;
+
+    /**
+     * 新規報告書作成（ファイル名: user_yyyymm_作業報告書.xls）
+     */
+    public String createReport(String month, String user, String client) {
+        try {
+            // 1. ファイル名設定 (user_202506_作業報告書.xls)
+            String fileNameMonth = DateUtil.getFileNameMonth(month);
+            String fileName = user + "_" + fileNameMonth + "_作業報告書.xls";
+            String outputPath = Paths.get(outputDir, fileName).toString();
+
+            // 出力ディレクトリが存在しない場合は作成
+            File outputDirFile = new File(outputDir);
+            if (!outputDirFile.exists()) {
+                outputDirFile.mkdirs();
+            }
+
+            // 2. テンプレートファイルをコピー
+            excelService.copyFile(templateFile, outputPath);
+
+            // 3. 基本項目設定
+            HSSFWorkbook workbook = excelService.loadWorkbook(outputPath);
+            HSSFSheet sheet = workbook.getSheetAt(0);
+
+            // 基本情報設定（B7: 対象月、C4: クライアント、L4: ユーザー名）
+            excelService.setCellValue(sheet, TARGET_MONTH_CELL, month);
+            excelService.setCellValue(sheet, CLIENT_NAME_CELL, client);
+            excelService.setCellValue(sheet, USER_NAME_CELL, user);
+
+            // 4. ファイル保存
+            excelService.saveWorkbook(workbook, outputPath);
+            workbook.close();
+
+            logger.info("ファイル作成完了: {}", fileName);
+            return fileName;
+
+        } catch (IOException e) {
+            throw new UncheckedIOException("報告書の作成に失敗しました", e);
+        } catch (Exception e) {
+            throw new IllegalStateException("報告書の作成に失敗しました", e);
+        }
+    }
+
+    /**
+     * CSV からの更新（日付,開始時刻,終了時刻,休憩時間,作業内容）
+     */
+    public int updateFromCsv(String fileName, String csvFile) {
+        try {
+            // 1. CSVファイル読み込み
+            String csvPath = Paths.get(csvDir, csvFile).toString();
+            List<WorkRecord> records = csvService.readCsv(csvPath);
+
+            // 2. Excelファイル読み込み
+            String excelPath = Paths.get(outputDir, fileName).toString();
+            HSSFWorkbook workbook = excelService.loadWorkbook(excelPath);
+            HSSFSheet sheet = workbook.getSheetAt(0);
+
+            int updatedCount = 0;
+
+            // 3. 各レコードを処理
+            for (WorkRecord record : records) {
+                // 日付をキーとして該当行特定
+                int rowIndex = excelService.findRowByDate(sheet, record.getDate());
+
+                if (rowIndex >= 0) {
+                    // 4. 開始時刻・終了時刻・休憩時間・作業内容更新
+                    String startTimeCell = START_TIME_COLUMN + (rowIndex + 1);
+                    String endTimeCell = END_TIME_COLUMN + (rowIndex + 1);
+                    String breakTimeCell = BREAK_TIME_COLUMN + (rowIndex + 1);
+                    String workContentCell = WORK_CONTENT_COLUMN + (rowIndex + 1);
+
+                    excelService.setCellValue(sheet, startTimeCell, record.getStartTimeString());
+                    excelService.setCellValue(sheet, endTimeCell, record.getEndTimeString());
+                    excelService.setCellValue(sheet, breakTimeCell, record.getBreakTimeString());
+                    excelService.setCellValue(sheet, workContentCell, record.getWorkContent());
+
+                    updatedCount++;
+                } else {
+                    logger.warn("該当日なし: {} ({})", record.getDate(), record.getDate().getDayOfWeek());
+                }
+            }
+
+            // 5. ファイル保存
+            excelService.saveWorkbook(workbook, excelPath);
+            workbook.close();
+
+            logger.info("CSV更新完了: {}件更新", updatedCount);
+            return updatedCount;
+
+        } catch (IOException e) {
+            throw new UncheckedIOException("CSVからの更新に失敗しました", e);
+        } catch (Exception e) {
+            throw new IllegalStateException("CSVからの更新に失敗しました", e);
+        }
+    }
+
+    /**
+     * ヘルプメッセージ表示
+     */
+    public String getHelpMessage() {
+        return """
+                【作業報告書管理システム】
+
+                利用可能なコマンド:
+
+                1. create-file --month <月> --user <ユーザー名> --client <クライアント名>
+                   新規報告書ファイルを作成します
+                   例: create-file --month 2025/06 --user "田中太郎" --client "株式会社サンプル"
+
+                2. update-file --file <ファイル名> --csv <CSVファイル名>
+                   CSVファイルで報告書を更新します
+                   例: update-file --file "田中太郎_202506_作業報告書.xls" --csv "work_data.csv"
+
+                3. help
+                   このヘルプを表示します
+
+                CSVファイル形式:
+                日付,開始時刻,終了時刻,休憩時間,作業内容
+                2025/06/02,09:30,17:45,1:00,システム設計書作成
+                2025/06/03,10:00,18:30,1:00,プログラム実装
+
+                注意事項:
+                - CSVファイルは " + csvDir + " に配置してください
+                - 生成ファイルは " + outputDir + " に保存されます
+                - テンプレートファイル: " + templateFile + "
+                """;
+    }
+}

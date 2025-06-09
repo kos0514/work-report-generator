@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: work-report-generator
+  shell:
+    interactive:
+      enabled: true
+    script:
+      enabled: false
+
+work-report:
+  template-file: ./local-data/templates/作業報告書 I社フォーマット.xls
+  output-dir: ./local-data/output
+  csv-dir: ./local-data/csv
+  holidays-file: classpath:config/syukujitsu.csv
+
+logging:
+  level:
+    com.kos0514.work_report_generator: INFO
