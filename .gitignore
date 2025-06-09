@@ -9,8 +9,12 @@
 build/
 !gradle/wrapper/gradle-wrapper.jar
 
-# Local data (not managed by Git)
-local-data/
+# Local data (only .gitkeep files are managed by Git)
+local-data/*
+!local-data/.gitkeep
+!local-data/*/
+local-data/*/*
+!local-data/*/.gitkeep
 
 # Java
 *.class
