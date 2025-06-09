@@ -8,7 +8,7 @@ spring:
       enabled: false
 
 work-report:
-  template-file: ./local-data/templates/作業報告書 I社フォーマット.xls
+  template-file: ./local-data/templates/作業報告書.xls
   output-dir: ./local-data/output
   csv-dir: ./local-data/csv
   holidays-file: classpath:config/syukujitsu.csv

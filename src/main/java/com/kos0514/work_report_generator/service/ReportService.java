@@ -56,6 +56,13 @@ public class ReportService {
      */
     public String createReport(String month, String user, String client) {
         try {
+            // テンプレートファイルの存在確認
+            File templateFileObj = new File(templateFile);
+            if (!templateFileObj.exists()) {
+                throw new IOException("テンプレートファイルが見つかりません: " + templateFile + 
+                    "\n`local-data/templates/` ディレクトリに作業報告書のテンプレートファイル（`作業報告書 I社フォーマット.xls`）を配置してください。");
+            }
+
             // 1. ファイル名設定 (user_202506_作業報告書.xls)
             String fileNameMonth = DateUtil.getFileNameMonth(month);
             String fileName = user + "_" + fileNameMonth + "_作業報告書.xls";
