@@ -1,0 +1,25 @@
+# IDE files
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Local data (not managed by Git)
+local-data/
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+*.logs
+hs_err_pid*
+
+# OS
+.DS_Store
+Thumbs.db
