@@ -239,12 +239,6 @@ public class ReportService {
             String fileName = fileNameMonth + "_work_data.csv";
             String csvPath = Paths.get(csvDir, fileName).toString();
 
-            // CSVディレクトリが存在しない場合は作成
-            File csvDirFile = new File(csvDir);
-            if (!csvDirFile.exists()) {
-                csvDirFile.mkdirs();
-            }
-
             // 3. 対象月の日数を取得
             YearMonth yearMonth = YearMonth.of(year, monthValue);
             int daysInMonth = yearMonth.lengthOfMonth();

@@ -6,7 +6,6 @@ import java.time.format.DateTimeParseException;
 
 public class DateUtil {
     private static final DateTimeFormatter CSV_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy/M/d");
-    private static final DateTimeFormatter MONTH_FORMAT = DateTimeFormatter.ofPattern("yyyy/MM");
 
     /**
      * CSV形式の日付文字列をLocalDateに変換
