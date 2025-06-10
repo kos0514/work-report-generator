@@ -1,6 +1,7 @@
 package com.kos0514.work_report_generator.service;
 
 import com.opencsv.CSVReader;
+import com.opencsv.CSVWriter;
 import com.kos0514.work_report_generator.model.Holiday;
 import com.kos0514.work_report_generator.model.WorkRecord;
 import com.kos0514.work_report_generator.util.DateUtil;
@@ -9,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
@@ -114,5 +116,41 @@ public class CsvService {
         }
 
         return holidays;
+    }
+
+    /**
+     * 作業記録CSVファイルを作成します
+     * <p>
+     * CSVファイルの形式: 日付,開始時刻,終了時刻,休憩時間,作業内容
+     * </p>
+     * <p>
+     * 例: 2025/06/02,09:00,18:00,1:00,
+     * </p>
+     * 
+     * @param records 作業記録のリスト
+     * @param csvFilePath 作成するCSVファイルのパス
+     * @throws UncheckedIOException ファイルの書き込みに失敗した場合
+     */
+    public void writeCsv(List<WorkRecord> records, String csvFilePath) {
+        try (CSVWriter writer = new CSVWriter(new FileWriter(csvFilePath, StandardCharsets.UTF_8))) {
+            // ヘッダー行を書き込み
+            writer.writeNext(new String[]{"日付", "開始時刻", "終了時刻", "休憩時間", "作業内容"});
+
+            // 各レコードを書き込み
+            for (WorkRecord record : records) {
+                String[] line = new String[]{
+                    DateUtil.formatDate(record.getDate()),
+                    record.getStartTimeString(),
+                    record.getEndTimeString(),
+                    record.getBreakTimeString(),
+                    record.getWorkContent()
+                };
+                writer.writeNext(line);
+            }
+
+            logger.info("CSVファイルを作成しました: {}", csvFilePath);
+        } catch (IOException e) {
+            throw new UncheckedIOException("CSVファイルの作成中にエラーが発生しました: " + csvFilePath, e);
+        }
     }
 }

@@ -16,6 +16,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -31,9 +32,6 @@ public class ReportService {
     private static final String TARGET_MONTH_CELL = "B7";
     private static final String CLIENT_NAME_CELL = "C4";
     private static final String USER_NAME_CELL = "L4";
-    private static final int WORK_START_ROW = 8;
-    private static final int WORK_END_ROW = 38;
-    private static final String DATE_COLUMN = "B";
     private static final String START_TIME_COLUMN = "F";
     private static final String END_TIME_COLUMN = "G";
     private static final String BREAK_TIME_COLUMN = "H";
@@ -69,12 +67,6 @@ public class ReportService {
             String fileName = user + "_" + fileNameMonth + "_作業報告書.xls";
             String outputPath = Paths.get(outputDir, fileName).toString();
 
-            // 出力ディレクトリが存在しない場合は作成
-            File outputDirFile = new File(outputDir);
-            if (!outputDirFile.exists()) {
-                outputDirFile.mkdirs();
-            }
-
             // 2. テンプレートファイルをコピー
             excelService.copyFile(templateFile, outputPath);
 
@@ -95,9 +87,6 @@ public class ReportService {
             }
             excelService.setCellValue(sheet, CLIENT_NAME_CELL, client);
             excelService.setCellValue(sheet, USER_NAME_CELL, user);
-
-            // B7の日付を設定したあとに一旦保存して書式を反映させる
-            excelService.saveWorkbook(workbook, outputPath);
 
             // 平日（土日祝以外）に開始時刻、終了時刻、休憩時間を自動設定
             setDefaultWorkTimeForWeekdays(sheet, month);
@@ -139,10 +128,10 @@ public class ReportService {
 
                 if (rowIndex >= 0) {
                     // 4. 開始時刻・終了時刻・休憩時間・作業内容更新
-                    String startTimeCell = START_TIME_COLUMN + (rowIndex + 1);
-                    String endTimeCell = END_TIME_COLUMN + (rowIndex + 1);
-                    String breakTimeCell = BREAK_TIME_COLUMN + (rowIndex + 1);
-                    String workContentCell = WORK_CONTENT_COLUMN + (rowIndex + 1);
+                    String startTimeCell = START_TIME_COLUMN + rowIndex;
+                    String endTimeCell = END_TIME_COLUMN + rowIndex;
+                    String breakTimeCell = BREAK_TIME_COLUMN + rowIndex;
+                    String workContentCell = WORK_CONTENT_COLUMN + rowIndex;
 
                     excelService.setCellValue(sheet, startTimeCell, record.getStartTimeString());
                     excelService.setCellValue(sheet, endTimeCell, record.getEndTimeString());
@@ -225,6 +214,78 @@ public class ReportService {
             }
         } catch (Exception e) {
             logger.error("平日のデフォルト時間設定中にエラーが発生しました: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 月の出勤日（平日）に対応するCSVファイルを作成します
+     * 
+     * @param month 対象月（yyyy/MM形式）
+     * @return 作成したCSVファイル名
+     */
+    public String createCsvFile(String month) {
+        try {
+            // 1. 月の解析
+            String[] parts = month.split("/");
+            if (parts.length != 2) {
+                throw new IllegalArgumentException("月形式が不正です: " + month);
+            }
+
+            int year = Integer.parseInt(parts[0]);
+            int monthValue = Integer.parseInt(parts[1]);
+
+            // 2. ファイル名設定 (yyyymm_work_data.csv)
+            String fileNameMonth = DateUtil.getFileNameMonth(month);
+            String fileName = fileNameMonth + "_work_data.csv";
+            String csvPath = Paths.get(csvDir, fileName).toString();
+
+            // CSVディレクトリが存在しない場合は作成
+            File csvDirFile = new File(csvDir);
+            if (!csvDirFile.exists()) {
+                csvDirFile.mkdirs();
+            }
+
+            // 3. 対象月の日数を取得
+            YearMonth yearMonth = YearMonth.of(year, monthValue);
+            int daysInMonth = yearMonth.lengthOfMonth();
+
+            // 4. 出勤日（平日）のWorkRecordリストを作成
+            List<WorkRecord> records = new ArrayList<>();
+
+            // デフォルト値
+            String defaultStartTime = "09:00";
+            String defaultEndTime = "18:00";
+            String defaultBreakTime = "1:00";
+            String emptyWorkContent = "";
+
+            // 各日に対して処理
+            for (int day = 1; day <= daysInMonth; day++) {
+                LocalDate date = LocalDate.of(year, monthValue, day);
+
+                // 平日（土日祝日以外）かチェック
+                if (holidayService.isWorkday(date)) {
+                    // WorkRecordオブジェクトを作成
+                    WorkRecord record = WorkRecord.of(
+                        date,
+                        defaultStartTime,
+                        defaultEndTime,
+                        defaultBreakTime,
+                        emptyWorkContent
+                    );
+                    records.add(record);
+
+                    logger.debug("出勤日のレコードを追加: {} ({})", date, date.getDayOfWeek());
+                }
+            }
+
+            // 5. CSVファイル作成
+            csvService.writeCsv(records, csvPath);
+
+            logger.info("CSVファイル作成完了: {}", fileName);
+            return fileName;
+
+        } catch (Exception e) {
+            throw new IllegalStateException("CSVファイルの作成に失敗しました: " + e.getMessage(), e);
         }
     }
 

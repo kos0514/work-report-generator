@@ -24,8 +24,15 @@ public class WorkReportCommands {
         @ShellOption("--client") String client    // クライアント名
     ) {
         try {
-            String fileName = reportService.createReport(month, user, client);
-            return "ファイル作成完了: " + fileName;
+            // Excelファイル作成
+            String excelFileName = reportService.createReport(month, user, client);
+
+            // CSVファイル作成
+            String csvFileName = reportService.createCsvFile(month);
+
+            return "ファイル作成完了:\n" + 
+                   "- Excel: " + excelFileName + "\n" + 
+                   "- CSV: " + csvFileName;
         } catch (Exception e) {
             return "エラー: " + e.getMessage();
         }

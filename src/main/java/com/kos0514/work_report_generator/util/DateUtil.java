@@ -7,7 +7,7 @@ import java.time.format.DateTimeParseException;
 public class DateUtil {
     private static final DateTimeFormatter CSV_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy/M/d");
     private static final DateTimeFormatter MONTH_FORMAT = DateTimeFormatter.ofPattern("yyyy/MM");
-    
+
     /**
      * CSV形式の日付文字列をLocalDateに変換
      */
@@ -18,7 +18,7 @@ public class DateUtil {
             throw new IllegalArgumentException("日付形式が正しくありません: " + dateStr + " (期待形式: yyyy/M/d)");
         }
     }
-    
+
     /**
      * 月形式の文字列（yyyy/MM）をパース
      */
@@ -36,12 +36,22 @@ public class DateUtil {
             throw new IllegalArgumentException("月形式が正しくありません: " + monthStr + " (期待形式: yyyy/MM)");
         }
     }
-    
+
     /**
      * ファイル名用の月文字列を生成（yyyyMM形式）
      */
     public static String getFileNameMonth(String monthStr) {
         String normalized = parseMonth(monthStr);
         return normalized.replace("/", "");
+    }
+
+    /**
+     * LocalDateをCSV形式の日付文字列に変換
+     * 
+     * @param date 変換する日付
+     * @return yyyy/M/d形式の日付文字列
+     */
+    public static String formatDate(LocalDate date) {
+        return date.format(CSV_DATE_FORMAT);
     }
 }
