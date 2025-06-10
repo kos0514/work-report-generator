@@ -110,6 +110,26 @@ public class ExcelService {
     }
 
     /**
+     * 指定されたセルをクリアします
+     * 
+     * @param sheet 対象のシート
+     * @param cellPosition セル位置（例: "B7"）
+     */
+    public void clearCell(HSSFSheet sheet, String cellPosition) {
+        int[] pos = parseCellPosition(cellPosition);
+        int row = pos[0];
+        int col = pos[1];
+
+        HSSFRow hssfRow = sheet.getRow(row);
+        if (hssfRow != null) {
+            HSSFCell cell = hssfRow.getCell(col);
+            if (cell != null) {
+                cell.setBlank();
+            }
+        }
+    }
+
+    /**
      * セル位置文字列を行列番号に変換します
      * 
      * @param cellPosition セル位置（例: "B7"）

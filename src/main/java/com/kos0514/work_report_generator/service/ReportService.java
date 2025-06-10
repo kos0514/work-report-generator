@@ -3,6 +3,7 @@ package com.kos0514.work_report_generator.service;
 import com.kos0514.work_report_generator.model.WorkRecord;
 import com.kos0514.work_report_generator.util.DateUtil;
 import lombok.RequiredArgsConstructor;
+import org.apache.poi.hssf.usermodel.HSSFFormulaEvaluator;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.slf4j.Logger;
@@ -181,10 +182,11 @@ public class ReportService {
                         String breakTimeCell = BREAK_TIME_COLUMN + rowIndex;
                         String workContentCell = WORK_CONTENT_COLUMN + rowIndex;
 
-                        excelService.setCellValue(sheet, startTimeCell, "");
-                        excelService.setCellValue(sheet, endTimeCell, "");
-                        excelService.setCellValue(sheet, breakTimeCell, "");
-                        excelService.setCellValue(sheet, workContentCell, "");
+                        // 新しいclearCellメソッドを使用してセルをクリア
+                        excelService.clearCell(sheet, startTimeCell);
+                        excelService.clearCell(sheet, endTimeCell);
+                        excelService.clearCell(sheet, breakTimeCell);
+                        excelService.clearCell(sheet, workContentCell);
 
                         clearedCount++;
                         logger.debug("CSVに含まれない日付の行をクリア: {} ({})", workday, workday.getDayOfWeek());
@@ -192,7 +194,11 @@ public class ReportService {
                 }
             }
 
-            // 10. ファイル保存
+            // 10. すべての計算式を再評価
+            logger.info("計算式を再評価します");
+            HSSFFormulaEvaluator.evaluateAllFormulaCells(workbook);
+
+            // 11. ファイル保存
             excelService.saveWorkbook(workbook, excelPath);
             workbook.close();
 
