@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 
 /**
@@ -33,10 +34,10 @@ public class ReportService {
     private static final int WORK_START_ROW = 8;
     private static final int WORK_END_ROW = 38;
     private static final String DATE_COLUMN = "B";
-    private static final String START_TIME_COLUMN = "D";
-    private static final String END_TIME_COLUMN = "E";
-    private static final String BREAK_TIME_COLUMN = "F";
-    private static final String WORK_CONTENT_COLUMN = "G";
+    private static final String START_TIME_COLUMN = "F";
+    private static final String END_TIME_COLUMN = "G";
+    private static final String BREAK_TIME_COLUMN = "H";
+    private static final String WORK_CONTENT_COLUMN = "J";
 
     private final ExcelService excelService;
     private final CsvService csvService;
@@ -82,9 +83,24 @@ public class ReportService {
             HSSFSheet sheet = workbook.getSheetAt(0);
 
             // 基本情報設定（B7: 対象月、C4: クライアント、L4: ユーザー名）
-            excelService.setCellValue(sheet, TARGET_MONTH_CELL, month);
+            // B7の日付形式をyyyy/mm/ddに変更
+            String[] parts = month.split("/");
+            if (parts.length == 2) {
+                int year = Integer.parseInt(parts[0]);
+                int monthValue = Integer.parseInt(parts[1]);
+                String formattedDate = String.format("%04d/%02d/01", year, monthValue);
+                excelService.setCellValue(sheet, TARGET_MONTH_CELL, formattedDate);
+            } else {
+                excelService.setCellValue(sheet, TARGET_MONTH_CELL, month);
+            }
             excelService.setCellValue(sheet, CLIENT_NAME_CELL, client);
             excelService.setCellValue(sheet, USER_NAME_CELL, user);
+
+            // B7の日付を設定したあとに一旦保存して書式を反映させる
+            excelService.saveWorkbook(workbook, outputPath);
+
+            // 平日（土日祝以外）に開始時刻、終了時刻、休憩時間を自動設定
+            setDefaultWorkTimeForWeekdays(sheet, month);
 
             // 4. ファイル保存
             excelService.saveWorkbook(workbook, outputPath);
@@ -150,6 +166,65 @@ public class ReportService {
             throw new UncheckedIOException("CSVからの更新に失敗しました", e);
         } catch (Exception e) {
             throw new IllegalStateException("CSVからの更新に失敗しました", e);
+        }
+    }
+
+    /**
+     * 平日（土日祝日以外）に開始時刻、終了時刻、休憩時間を自動設定
+     *
+     * @param sheet 対象のシート
+     * @param monthStr 対象月（yyyy/MM形式）
+     */
+    private void setDefaultWorkTimeForWeekdays(HSSFSheet sheet, String monthStr) {
+        try {
+            // 月の解析
+            String[] parts = monthStr.split("/");
+            if (parts.length != 2) {
+                logger.warn("月形式が不正です: {}", monthStr);
+                return;
+            }
+
+            int year = Integer.parseInt(parts[0]);
+            int month = Integer.parseInt(parts[1]);
+
+            // 対象月の日数を取得
+            YearMonth yearMonth = YearMonth.of(year, month);
+            int daysInMonth = yearMonth.lengthOfMonth();
+
+            // デフォルト値
+            String defaultStartTime = "09:00";
+            String defaultEndTime = "18:00";
+            String defaultBreakTime = "1:00";
+
+            // 各日に対して処理
+            for (int day = 1; day <= daysInMonth; day++) {
+                LocalDate date = LocalDate.of(year, month, day);
+
+                // 平日（土日祝日以外）かチェック
+                if (holidayService.isWorkday(date)) {
+                    // 行インデックスを取得
+                    int rowIndex = excelService.findRowByDate(sheet, date);
+
+                    if (rowIndex >= 0) {
+                        // セル位置を計算
+                        String startTimeCell = START_TIME_COLUMN + rowIndex;
+                        String endTimeCell = END_TIME_COLUMN + rowIndex;
+                        String breakTimeCell = BREAK_TIME_COLUMN + rowIndex;
+
+                        // 値を設定
+                        excelService.setCellValue(sheet, startTimeCell, defaultStartTime);
+                        excelService.setCellValue(sheet, endTimeCell, defaultEndTime);
+                        excelService.setCellValue(sheet, breakTimeCell, defaultBreakTime);
+
+                        logger.debug("平日のデフォルト時間を設定: {} ({}) - 開始: {}, 終了: {}, 休憩: {}", 
+                            date, date.getDayOfWeek(), defaultStartTime, defaultEndTime, defaultBreakTime);
+                    } else {
+                        logger.warn("該当日の行が見つかりません: {} ({})", date, date.getDayOfWeek());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.error("平日のデフォルト時間設定中にエラーが発生しました: {}", e.getMessage());
         }
     }
 

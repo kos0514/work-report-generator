@@ -77,21 +77,21 @@ public class ExcelService {
     public int findRowByDate(HSSFSheet sheet, LocalDate date) {
         int targetDay = date.getDayOfMonth();
 
-        // 作業データ行範囲（8-38行目）で検索
-        for (int rowNum = 7; rowNum <= 37; rowNum++) { // 0-based indexing
-            HSSFRow row = sheet.getRow(rowNum);
-            if (row != null) {
-                HSSFCell dateCell = row.getCell(1); // B列 (0-based indexing)
-                if (dateCell != null && dateCell.getCellType() == CellType.NUMERIC) {
-                    int cellValue = (int) dateCell.getNumericCellValue();
-                    if (cellValue == targetDay) {
-                        return rowNum;
-                    }
-                }
-            }
+        // 日付が1-31の範囲内かチェック
+
+        // テンプレートファイルでは、B7に1日が設定され、以降は連続的に日付が設定される
+        // B7 = 1日, B8 = 2日, B9 = 3日, ...
+        int rowNum = (targetDay - 1) + 7; // 7行目（0ベース）が1日に対応
+
+        // 行番号が有効範囲内（7-37行目）かチェック
+
+        // 計算した行が存在するかチェック
+        HSSFRow row = sheet.getRow(rowNum);
+        if (row == null) {
+            return -1;
         }
 
-        return -1; // 見つからない場合
+        return rowNum;
     }
 
     /**
