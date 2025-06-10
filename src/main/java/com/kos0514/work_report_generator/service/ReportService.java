@@ -107,6 +107,7 @@ public class ReportService {
 
     /**
      * CSV からの更新（日付,開始時刻,終了時刻,休憩時間,作業内容）
+     * CSVファイルに含まれない日付の行はクリアされます
      */
     public int updateFromCsv(String fileName, String csvFile) {
         try {
@@ -119,15 +120,40 @@ public class ReportService {
             HSSFWorkbook workbook = excelService.loadWorkbook(excelPath);
             HSSFSheet sheet = workbook.getSheetAt(0);
 
-            int updatedCount = 0;
+            // 3. 対象月を取得（ファイル名から抽出）
+            // ファイル名形式: user_yyyymm_作業報告書.xls
+            String yearMonth = null;
+            String[] parts = fileName.split("_");
+            if (parts.length >= 2) {
+                yearMonth = parts[1];
+                if (yearMonth.length() == 6) {
+                    yearMonth = yearMonth.substring(0, 4) + "/" + yearMonth.substring(4, 6);
+                }
+            }
 
-            // 3. 各レコードを処理
+            if (yearMonth == null) {
+                logger.warn("ファイル名から対象月を抽出できませんでした: {}", fileName);
+                return 0;
+            }
+
+            // 4. CSVファイルに含まれる日付のリストを作成
+            List<LocalDate> csvDates = records.stream()
+                .map(WorkRecord::getDate)
+                .toList();
+
+            // 5. 対象月の全ての平日（出勤日）を取得
+            List<LocalDate> workdays = getWorkdaysOfMonth(yearMonth);
+
+            int updatedCount = 0;
+            int clearedCount = 0;
+
+            // 6. 各レコードを処理
             for (WorkRecord record : records) {
                 // 日付をキーとして該当行特定
                 int rowIndex = excelService.findRowByDate(sheet, record.getDate());
 
                 if (rowIndex >= 0) {
-                    // 4. 開始時刻・終了時刻・休憩時間・作業内容更新
+                    // 7. 開始時刻・終了時刻・休憩時間・作業内容更新
                     String startTimeCell = START_TIME_COLUMN + rowIndex;
                     String endTimeCell = END_TIME_COLUMN + rowIndex;
                     String breakTimeCell = BREAK_TIME_COLUMN + rowIndex;
@@ -144,11 +170,33 @@ public class ReportService {
                 }
             }
 
-            // 5. ファイル保存
+            // 8. CSVファイルに含まれない平日の行をクリア
+            for (LocalDate workday : workdays) {
+                if (!csvDates.contains(workday)) {
+                    int rowIndex = excelService.findRowByDate(sheet, workday);
+                    if (rowIndex >= 0) {
+                        // 9. 開始時刻・終了時刻・休憩時間・作業内容をクリア
+                        String startTimeCell = START_TIME_COLUMN + rowIndex;
+                        String endTimeCell = END_TIME_COLUMN + rowIndex;
+                        String breakTimeCell = BREAK_TIME_COLUMN + rowIndex;
+                        String workContentCell = WORK_CONTENT_COLUMN + rowIndex;
+
+                        excelService.setCellValue(sheet, startTimeCell, "");
+                        excelService.setCellValue(sheet, endTimeCell, "");
+                        excelService.setCellValue(sheet, breakTimeCell, "");
+                        excelService.setCellValue(sheet, workContentCell, "");
+
+                        clearedCount++;
+                        logger.debug("CSVに含まれない日付の行をクリア: {} ({})", workday, workday.getDayOfWeek());
+                    }
+                }
+            }
+
+            // 10. ファイル保存
             excelService.saveWorkbook(workbook, excelPath);
             workbook.close();
 
-            logger.info("CSV更新完了: {}件更新", updatedCount);
+            logger.info("CSV更新完了: {}件更新, {}件クリア", updatedCount, clearedCount);
             return updatedCount;
 
         } catch (IOException e) {
@@ -215,6 +263,46 @@ public class ReportService {
         } catch (Exception e) {
             logger.error("平日のデフォルト時間設定中にエラーが発生しました: {}", e.getMessage());
         }
+    }
+
+    /**
+     * 対象月の全ての平日（出勤日）を取得します
+     * 
+     * @param monthStr 対象月（yyyy/MM形式）
+     * @return 平日（出勤日）のリスト
+     */
+    private List<LocalDate> getWorkdaysOfMonth(String monthStr) {
+        List<LocalDate> workdays = new ArrayList<>();
+
+        try {
+            // 月の解析
+            String[] parts = monthStr.split("/");
+            if (parts.length != 2) {
+                logger.warn("月形式が不正です: {}", monthStr);
+                return workdays;
+            }
+
+            int year = Integer.parseInt(parts[0]);
+            int month = Integer.parseInt(parts[1]);
+
+            // 対象月の日数を取得
+            YearMonth yearMonth = YearMonth.of(year, month);
+            int daysInMonth = yearMonth.lengthOfMonth();
+
+            // 各日に対して処理
+            for (int day = 1; day <= daysInMonth; day++) {
+                LocalDate date = LocalDate.of(year, month, day);
+
+                // 平日（土日祝日以外）かチェック
+                if (holidayService.isWorkday(date)) {
+                    workdays.add(date);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("平日リスト取得中にエラーが発生しました: {}", e.getMessage());
+        }
+
+        return workdays;
     }
 
     /**
