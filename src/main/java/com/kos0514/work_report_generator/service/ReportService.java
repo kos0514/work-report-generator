@@ -5,11 +5,19 @@ import com.kos0514.work_report_generator.util.DateUtil;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.hssf.usermodel.HSSFFormulaEvaluator;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
@@ -377,6 +385,121 @@ public class ReportService {
     }
 
     /**
+     * csvフォルダから最新の日付（yyyymm形式）のファイルを見つけます
+     * 
+     * @return 最新のCSVファイル情報（ファイル名とyyyymm形式の日付）
+     * @throws IllegalStateException CSVファイルが見つからない場合
+     */
+    public CsvFileInfo findLatestCsvFile() {
+        try {
+            // CSVファイルの命名規則: yyyymm_work_data.csv
+            Pattern pattern = Pattern.compile("(\\d{6})_work_data\\.csv");
+
+            // csvフォルダ内のファイルを検索
+            Path csvDirPath = Paths.get(csvDir);
+
+            Optional<CsvFileInfo> latestCsvFile;
+            try (Stream<Path> paths = Files.list(csvDirPath)) {
+                latestCsvFile = paths
+                    .filter(Files::isRegularFile)
+                    .map(path -> {
+                        String fileName = path.getFileName().toString();
+                        Matcher matcher = pattern.matcher(fileName);
+                        if (matcher.matches()) {
+                            String yearMonth = matcher.group(1);
+                            return new CsvFileInfo(fileName, yearMonth);
+                        }
+                        return null;
+                    })
+                    .filter(Objects::nonNull)
+                    .max(Comparator.comparing(CsvFileInfo::yearMonth));
+            }
+
+            if (latestCsvFile.isPresent()) {
+                logger.info("最新のCSVファイルを見つけました: {}", latestCsvFile.get().fileName());
+                return latestCsvFile.get();
+            } else {
+                throw new IllegalStateException("CSVファイルが見つかりません: " + csvDir);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException("CSVファイルの検索中にエラーが発生しました", e);
+        }
+    }
+
+    /**
+     * 指定した年月（yyyymm形式）を含むExcelファイルを見つけます
+     * 
+     * @param yearMonth 年月（yyyymm形式）
+     * @return 該当するExcelファイルのリスト
+     */
+    public List<String> findExcelFilesByYearMonth(String yearMonth) {
+        try {
+            // Excelファイルの命名規則: user_yyyymm_作業報告書.xls
+            Pattern pattern = Pattern.compile("(.+)_" + yearMonth + "_作業報告書\\.xls");
+
+            // outputフォルダ内のファイルを検索
+            Path outputDirPath = Paths.get(outputDir);
+
+            List<String> matchingFiles = new ArrayList<>();
+            try (Stream<Path> paths = Files.list(outputDirPath)) {
+                paths
+                    .filter(Files::isRegularFile)
+                    .map(path -> path.getFileName().toString())
+                    .forEach(fileName -> {
+                        Matcher matcher = pattern.matcher(fileName);
+                        if (matcher.matches()) {
+                            matchingFiles.add(fileName);
+                        }
+                    });
+            }
+
+            logger.info("{}年月のExcelファイルを{}件見つけました", yearMonth, matchingFiles.size());
+            return matchingFiles;
+        } catch (IOException e) {
+            throw new UncheckedIOException("Excelファイルの検索中にエラーが発生しました", e);
+        }
+    }
+
+    /**
+     * 最新のCSVファイルを対応するExcelファイルに適用します
+     * 
+     * @return 更新されたファイル数
+     */
+    public int saveLatestCsvToExcel() {
+        try {
+            // 1. 最新のCSVファイルを見つける
+            CsvFileInfo latestCsvFile = findLatestCsvFile();
+            String yearMonth = latestCsvFile.yearMonth();
+            String csvFileName = latestCsvFile.fileName();
+
+            // 2. 同じ年月のExcelファイルを見つける
+            List<String> excelFiles = findExcelFilesByYearMonth(yearMonth);
+
+            if (excelFiles.isEmpty()) {
+                logger.warn("{}年月のExcelファイルが見つかりません", yearMonth);
+                return 0;
+            }
+
+            // 3. 各Excelファイルを更新
+            int updatedFiles = 0;
+            for (String excelFileName : excelFiles) {
+                try {
+                    int updatedRows = updateFromCsv(excelFileName, csvFileName);
+                    logger.info("ファイル更新完了: {} ({}行更新)", excelFileName, updatedRows);
+                    updatedFiles++;
+                } catch (Exception e) {
+                    logger.error("ファイル更新中にエラーが発生しました: {}", excelFileName, e);
+                }
+            }
+
+            return updatedFiles;
+        } catch (Exception e) {
+            logger.error("保存処理中にエラーが発生しました", e);
+            throw e;
+        }
+    }
+
+    /**
      * ヘルプメッセージ表示
      */
     public String getHelpMessage() {
@@ -393,7 +516,11 @@ public class ReportService {
                    CSVファイルで報告書を更新します
                    例: update-file --file "田中太郎_202506_作業報告書.xls" --csv "work_data.csv"
 
-                3. help
+                3. save
+                   最新のCSVファイルを対応するExcelファイルに適用します
+                   例: save
+
+                4. help
                    このヘルプを表示します
 
                 CSVファイル形式:
@@ -407,4 +534,9 @@ public class ReportService {
                 - テンプレートファイル: " + templateFile + "
                 """;
     }
+
+    /**
+     * CSVファイル情報を保持するレコードクラス
+     */
+    public record CsvFileInfo(String fileName, String yearMonth) {}
 }

@@ -47,6 +47,20 @@ public class WorkReportCommands {
     }
   }
 
+  @ShellMethod(value = "最新のCSVファイルを対応するExcelファイルに適用", key = "save")
+  public String saveLatestCsv() {
+    try {
+      int updatedFiles = reportService.saveLatestCsvToExcel();
+      if (updatedFiles > 0) {
+        return "保存完了: " + updatedFiles + " 件のファイルを更新しました";
+      } else {
+        return "更新対象のファイルがありませんでした";
+      }
+    } catch (Exception e) {
+      return "エラー: " + e.getMessage();
+    }
+  }
+
   @ShellMethod(value = "コマンド一覧とヘルプを表示", key = "help")
   public String showHelp() {
     return reportService.getHelpMessage();
