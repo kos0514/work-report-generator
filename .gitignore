@@ -23,6 +23,7 @@ local-data/*/*
 *.ear
 *.logs
 hs_err_pid*
+work-report-generator.log
 
 # OS
 .DS_Store
