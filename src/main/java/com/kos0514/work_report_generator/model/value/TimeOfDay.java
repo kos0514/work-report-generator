@@ -1,27 +1,22 @@
 package com.kos0514.work_report_generator.model.value;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
-
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Objects;
+import lombok.Value;
 
 /**
  * 時刻を表す値オブジェクト
  * HH:mm形式の時刻を扱います
  */
-@Getter
-@EqualsAndHashCode
-@ToString
-public final class TimeOfDay {
+@Value
+public class TimeOfDay {
     
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("H:mm");
     private static final DateTimeFormatter OUTPUT_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
     
-    private final LocalTime value;
+    LocalTime value;
     
     private TimeOfDay(LocalTime value) {
         this.value = Objects.requireNonNull(value, "時刻は必須です");

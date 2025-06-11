@@ -1,14 +1,6 @@
 package com.kos0514.work_report_generator.service;
 
 import com.kos0514.work_report_generator.model.Holiday;
-import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.ResourceLoader;
-import org.springframework.stereotype.Service;
-
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,6 +8,13 @@ import java.io.UncheckedIOException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.stereotype.Service;
 
 /**
  * 祝日データを管理し、日付が祝日かどうかを判定するサービスクラス
@@ -25,13 +24,10 @@ import java.util.List;
 public class HolidayService {
 
     private static final Logger logger = LoggerFactory.getLogger(HolidayService.class);
-
-    @Value("${work-report.holidays-file}")
-    private String holidaysFile;
-
     private final CsvService csvService;
     private final ResourceLoader resourceLoader;
-
+    @Value("${work-report.holidays-file}")
+    private String holidaysFile;
     private List<Holiday> holidays;
 
     @PostConstruct

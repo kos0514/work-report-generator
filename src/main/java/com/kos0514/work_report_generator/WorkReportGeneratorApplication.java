@@ -6,8 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class WorkReportGeneratorApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(WorkReportGeneratorApplication.class, args);
-	}
-
+  public static void main(String[] args) {
+    SpringApplication.run(WorkReportGeneratorApplication.class, args);
+  }
 }

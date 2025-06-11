@@ -1,26 +1,21 @@
 package com.kos0514.work_report_generator.model.value;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
-
 import java.time.Duration;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.Value;
 
 /**
  * 作業時間や休憩時間を表す値オブジェクト
  * H:mm形式の時間を扱います
  */
-@Getter
-@EqualsAndHashCode
-@ToString
-public final class WorkDuration {
+@Value
+public class WorkDuration {
     
     private static final Pattern DURATION_PATTERN = Pattern.compile("(\\d+):(\\d{2})");
     
-    private final Duration value;
+    Duration value;
     
     private WorkDuration(Duration value) {
         this.value = Objects.requireNonNull(value, "時間は必須です");
