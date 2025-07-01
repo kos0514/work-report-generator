@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.LocalDate;
+import java.util.Date;
 import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
@@ -58,6 +59,32 @@ public class ExcelService {
     }
 
     cell.setCellValue(value);
+  }
+
+  /**
+   * 指定されたシートの指定されたセル位置に日付値を設定します
+   *
+   * @param sheet 対象のシート
+   * @param cellPosition セル位置（例: "B7"）
+   * @param date 設定する日付
+   * @throws IllegalArgumentException セル位置の形式が不正な場合
+   */
+  public void setCellDateValue(HSSFSheet sheet, String cellPosition, Date date) {
+    int[] pos = parseCellPosition(cellPosition);
+    int row = pos[0];
+    int col = pos[1];
+
+    HSSFRow hssfRow = sheet.getRow(row);
+    if (hssfRow == null) {
+      hssfRow = sheet.createRow(row);
+    }
+
+    HSSFCell cell = hssfRow.getCell(col);
+    if (cell == null) {
+      cell = hssfRow.createCell(col);
+    }
+
+    cell.setCellValue(date);
   }
 
   /**

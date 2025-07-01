@@ -11,7 +11,9 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -44,6 +46,13 @@ public class ReportService {
     private static final String END_TIME_COLUMN = "G";
     private static final String BREAK_TIME_COLUMN = "H";
     private static final String WORK_CONTENT_COLUMN = "J";
+
+    // 日付検証用の定数
+    private static final int MIN_VALID_YEAR = 1900;
+    private static final int MAX_VALID_YEAR = 2100;
+    private static final int MIN_VALID_MONTH = 1;
+    private static final int MAX_VALID_MONTH = 12;
+    private static final String DATE_FORMAT_PATTERN = "^\\d{4}/(?:0?[1-9]|1[0-2])$";
 
     private final ExcelService excelService;
     private final CsvService csvService;
@@ -83,16 +92,9 @@ public class ReportService {
             HSSFSheet sheet = workbook.getSheetAt(0);
 
             // 基本情報設定（B7: 対象月、C4: クライアント、L4: ユーザー名）
-            // B7の日付形式をyyyy/mm/ddに変更
-            String[] parts = month.split("/");
-            if (parts.length == 2) {
-                int year = Integer.parseInt(parts[0]);
-                int monthValue = Integer.parseInt(parts[1]);
-                String formattedDate = String.format("%04d/%02d/01", year, monthValue);
-                excelService.setCellValue(sheet, TARGET_MONTH_CELL, formattedDate);
-            } else {
-                excelService.setCellValue(sheet, TARGET_MONTH_CELL, month);
-            }
+            // B7にDate型の日付を設定
+            Date targetDate = parseTargetDate(month);
+            excelService.setCellDateValue(sheet, TARGET_MONTH_CELL, targetDate);
             excelService.setCellValue(sheet, CLIENT_NAME_CELL, client);
             excelService.setCellValue(sheet, USER_NAME_CELL, user);
 
@@ -539,4 +541,71 @@ public class ReportService {
      * CSVファイル情報を保持するレコードクラス
      */
     public record CsvFileInfo(String fileName, String yearMonth) {}
+
+    /**
+     * 対象月文字列（yyyy/mm形式）を解析し、対応する日付（Date型）を返します。
+     * 無効な入力の場合は当月の1日を返します。
+     *
+     * @param month 対象月文字列（yyyy/mm形式）
+     * @return 対象月の1日（Date型）
+     */
+    private Date parseTargetDate(String month) {
+        Date targetDate = null;
+        Calendar calendar = Calendar.getInstance();
+        calendar.clear();
+
+        // yyyy/mm形式かどうかを正規表現で検証
+        boolean validFormat = false;
+
+        if (month != null && month.matches(DATE_FORMAT_PATTERN)) {
+            try {
+                String[] parts = month.split("/");
+                int year = Integer.parseInt(parts[0]);
+                int monthValue = Integer.parseInt(parts[1]);
+
+                // 年と月の値が有効な範囲内かを検証
+                if (year >= MIN_VALID_YEAR && year <= MAX_VALID_YEAR && 
+                    monthValue >= MIN_VALID_MONTH && monthValue <= MAX_VALID_MONTH) {
+                    // 月の値（1-12）に対応するCalendarの月定数を取得
+                    int calendarMonth = switch (monthValue) {
+                        case 1 -> Calendar.JANUARY;
+                        case 2 -> Calendar.FEBRUARY;
+                        case 3 -> Calendar.MARCH;
+                        case 4 -> Calendar.APRIL;
+                        case 5 -> Calendar.MAY;
+                        case 6 -> Calendar.JUNE;
+                        case 7 -> Calendar.JULY;
+                        case 8 -> Calendar.AUGUST;
+                        case 9 -> Calendar.SEPTEMBER;
+                        case 10 -> Calendar.OCTOBER;
+                        case 11 -> Calendar.NOVEMBER;
+                        case 12 -> Calendar.DECEMBER;
+                        default -> Calendar.JANUARY; // デフォルト値
+                    };
+
+                    calendar.set(year, calendarMonth, 1); // 月の1日を設定
+                    targetDate = calendar.getTime();
+                    validFormat = true;
+
+                    logger.debug("有効な日付形式を処理: {}", month);
+                } else {
+                    logger.warn("無効な年または月の値: {}", month);
+                }
+            } catch (NumberFormatException e) {
+                logger.warn("数値への変換に失敗: {}", month, e);
+            }
+        } else {
+            logger.warn("無効な日付形式: {}", month);
+        }
+
+        // 無効な入力の場合は当月の1日を設定
+        if (!validFormat) {
+            calendar.setTime(new Date()); // 現在の日付を設定
+            calendar.set(Calendar.DAY_OF_MONTH, 1); // 当月の1日
+            targetDate = calendar.getTime();
+            logger.info("無効な入力のため当月の1日を設定します");
+        }
+
+        return targetDate;
+    }
 }
