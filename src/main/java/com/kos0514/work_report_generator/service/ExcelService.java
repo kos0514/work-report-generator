@@ -195,4 +195,15 @@ public class ExcelService {
       throw new UncheckedIOException("ファイルのコピーに失敗しました: " + sourcePath + " -> " + destPath, e);
     }
   }
+
+  /**
+   * 指定された列の幅を設定します
+   *
+   * @param sheet 対象のシート
+   * @param columnIndex 設定する列のインデックス（0ベース）
+   * @param width 設定する幅（Apache POIでは列幅の単位は1/256文字幅）
+   */
+  public void setColumnWidth(HSSFSheet sheet, int columnIndex, int width) {
+    sheet.setColumnWidth(columnIndex, width);
+  }
 }

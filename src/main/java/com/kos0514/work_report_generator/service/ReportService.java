@@ -5,6 +5,8 @@ import com.kos0514.work_report_generator.util.DateUtil;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -47,6 +49,10 @@ public class ReportService {
     private static final String END_TIME_COLUMN = "G";
     private static final String BREAK_TIME_COLUMN = "H";
     private static final String WORK_CONTENT_COLUMN = "J";
+    private static final String Q_COLUMN = "Q";
+    private static final int Q_COLUMN_INDEX = 16;
+    private static final BigDecimal MAX_BYTE_COUNT = new BigDecimal("50");
+    private static final int DEFAULT_COLUMN_WIDTH = 2048; // 8文字分（256 * 8）
 
     // 日付検証用の定数
     private static final int MIN_VALID_YEAR = 1900;
@@ -164,6 +170,9 @@ public class ReportService {
             int updatedCount = 0;
             int clearedCount = 0;
 
+            // J列の内容の最大バイト数を保持する変数
+            BigDecimal maxByteCount = BigDecimal.ZERO;
+
             // 6. 各レコードを処理
             for (WorkRecord record : records) {
                 // 日付をキーとして該当行特定
@@ -180,6 +189,14 @@ public class ReportService {
                     excelService.setCellValue(sheet, endTimeCell, record.getEndTimeString());
                     excelService.setCellValue(sheet, breakTimeCell, record.getBreakTimeString());
                     excelService.setCellValue(sheet, workContentCell, record.getWorkContent());
+
+                    // Q列のセルをクリア
+                    String qColumnCell = Q_COLUMN + rowIndex;
+                    excelService.clearCell(sheet, qColumnCell);
+
+                    // J列の内容のバイト数を計算し、最大値を更新
+                    BigDecimal byteCount = calculateByteCount(record.getWorkContent());
+                    maxByteCount = maxByteCount.max(byteCount);
 
                     updatedCount++;
                 } else {
@@ -209,6 +226,10 @@ public class ReportService {
                     }
                 }
             }
+
+            // 9. 最大バイト数に基づいてQ列の幅を調整
+            logger.debug("J列の最大バイト数: {}", maxByteCount);
+            adjustQColumnWidthBasedOnByteCount(sheet, maxByteCount);
 
             // 10. すべての計算式を再評価
             logger.info("計算式を再評価します");
@@ -550,6 +571,56 @@ public class ReportService {
     }
 
     /**
+     * 文字列のバイト数を計算します
+     * 1バイト文字は0.5、2バイト文字は1としてカウントします
+     *
+     * @param content 計算対象の文字列
+     * @return 計算されたバイト数
+     */
+    private BigDecimal calculateByteCount(String content) {
+        if (content == null || content.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+
+        // 文字列のバイト数を計算（1バイト文字は0.5、2バイト文字は1）
+        BigDecimal byteCount = BigDecimal.ZERO;
+        for (char c : content.toCharArray()) {
+            // 1バイト文字（ASCII）か2バイト文字（日本語など）かを判定
+            byteCount = byteCount.add((c <= 0x7F) ? BigDecimal.ONE: BigDecimal.TWO);
+        }
+
+        return byteCount;
+    }
+
+    /**
+     * J列の内容のバイト数に基づいてQ列の幅を調整します
+     * 合計50バイトを超えた場合にQ列の幅を調整し、50バイト以下の場合はデフォルト値に戻します
+     * 1バイト文字は0.5、2バイト文字は1としてカウントします
+     *
+     * @param sheet   対象のシート
+     * @param maxByteCount 最大バイト数
+     */
+    private void adjustQColumnWidthBasedOnByteCount(HSSFSheet sheet, BigDecimal maxByteCount) {
+        // 50バイトを超える場合に調整
+        if (maxByteCount.compareTo(MAX_BYTE_COUNT) > 0) {
+            // 1. 超過バイト数を計算（最大バイト数 - 閾値）
+            BigDecimal excessByteCount = maxByteCount.subtract(MAX_BYTE_COUNT);
+
+            // 2. 超過バイト数を文字数に変換（小数点以下切り上げ）
+            int excessCharCount = excessByteCount.setScale(0, RoundingMode.CEILING).intValue();
+
+            // 3. 文字数をPOI単位の列幅に変換（1文字 = 256単位）
+            int columnWidthInPoi = excessCharCount * 256;
+
+            // Q列の幅を設定（超過分の幅）
+            excelService.setColumnWidth(sheet, Q_COLUMN_INDEX, columnWidthInPoi);
+        } else {
+            // 50バイト以下の場合はデフォルト幅に戻す
+            excelService.setColumnWidth(sheet, Q_COLUMN_INDEX, DEFAULT_COLUMN_WIDTH);
+        }
+    }
+
+    /**
      * 対象月文字列（yyyy/mm形式）を解析し、対応する日付（Date型）を返します。
      * 無効な入力の場合は当月の1日を返します。
      *
@@ -617,11 +688,6 @@ public class ReportService {
     }
 
     /**
-     * CSVファイル情報を保持するレコードクラス
-     */
-    public record CsvFileInfo(String fileName, String yearMonth) {}
-
-    /**
      * ファイル名から年月を抽出します（user_yyyymm_作業報告書.xls）
      *
      * @param fileName ファイル名
@@ -638,4 +704,9 @@ public class ReportService {
         }
         return null;
     }
+
+    /**
+     * CSVファイル情報を保持するレコードクラス
+     */
+    public record CsvFileInfo(String fileName, String yearMonth) {}
 }
