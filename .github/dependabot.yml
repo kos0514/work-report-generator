@@ -35,17 +35,6 @@ updates:
       prefix: "[修正]"           # コミットメッセージの接頭辞
       include: "scope"           # 依存関係の範囲情報を含める
 
-    # 脆弱性のある依存関係の更新を優先する設定
-    vulnerability-alerts:
-      enabled: true              # 脆弱性アラートを有効化
-
-    # バージョン更新戦略
-    # auto: マイナーバージョンとパッチバージョンのみ自動更新
-    # widen: 範囲を広げる
-    # increase: バージョンを上げる
-    # increase-if-necessary: 必要な場合のみバージョンを上げる
-    versioning-strategy: auto
-
     # 自動マージの設定（現在はコメントアウト）
     # 脆弱性修正のPRのみ自動マージする場合に使用
     # GitHub Actionsの設定（dependabot-auto-merge.yml）と連携
