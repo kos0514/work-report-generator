@@ -17,10 +17,13 @@
 - 新規作業報告書ファイルの作成（Excelファイルと対応するCSVファイルを自動生成）
 - CSVファイルからの作業報告書の更新
 - 祝日対応（内閣府提供の祝日データ使用）
+- 最新のCSVファイルを対応するExcelファイルに自動適用
+- Excelファイルのパスワード付きZIP圧縮と送信機能
 
 ## 動作環境
 - Java 21
-- Spring Boot 3.x
+- Spring Boot 3.5.0
+- Spring Shell 3.4.0
 - Gradle
 
 ## インストール方法
@@ -31,7 +34,7 @@
 
 ### セットアップ手順
 1. リポジトリをクローンまたはダウンロードします
-2. `local-data/templates/` ディレクトリに作業報告書のテンプレートファイル（`作業報告書 I社フォーマット.xls`）を配置します
+2. `local-data/templates/` ディレクトリに作業報告書のテンプレートファイル（`作業報告書.xls`）を配置します
 
 ## 使用方法
 
@@ -79,6 +82,27 @@ shell:> update-file --file "田中太郎_202506_作業報告書.xls" --csv "work
 - CSVファイルに含まれない日付の行は自動的にクリアされます
 - 更新後、時間計算式が自動的に実行され、合計時間などが再計算されます
 
+#### 最新のCSVファイルを適用
+```bash
+shell:> save
+```
+**処理内容**:
+- 最新のCSVファイルを対応するExcelファイルに自動的に適用します
+- 年月が一致するExcelファイルとCSVファイルを自動的に検出して更新します
+- 複数のファイルが更新された場合、更新件数が表示されます
+
+#### Excelファイルの送信
+```bash
+shell:> send --file "田中太郎_202506_作業報告書.xls"
+```
+**パラメータ**:
+- `--file`: 送信するExcelファイル名（省略時は最新のファイルを使用）
+
+**処理内容**:
+- 指定されたExcelファイルをパスワード付きZIPファイルに圧縮します
+- 送信先ディレクトリに保存します（初回実行時は送信先ディレクトリの入力を求められます）
+- パスワードは自動生成され、画面に表示されるとともに専用ディレクトリに保存されます
+
 #### ヘルプ表示
 ```bash
 shell:> help
@@ -98,19 +122,28 @@ CSVファイルは `local-data/csv/` ディレクトリに配置してくださ�
 
 ## ディレクトリ構成
 - `local-data/templates/` - Excelテンプレートファイル
-  - `作業報告書 I社フォーマット.xls` を配置
+  - `作業報告書.xls` を配置
 - `local-data/output/` - 生成された作業報告書ファイル
 - `local-data/csv/` - CSV入力ファイル
+- `local-data/config/` - 設定ファイル
+  - `send-config.properties` - 送信設定
 
 ## 設定
+
+### アプリケーション設定
 設定は `application.yml` ファイルで行います：
 ```yaml
 work-report:
-  template-file: ./local-data/templates/作業報告書 I社フォーマット.xls
+  template-file: ./local-data/templates/作業報告書.xls
   output-dir: ./local-data/output
   csv-dir: ./local-data/csv
   holidays-file: classpath:config/syukujitsu.csv
 ```
+
+### 送信設定
+送信機能を使用する場合、初回実行時に送信先ディレクトリの入力を求められます。この設定は `local-data/config/send-config.properties` ファイルに保存され、次回以降は自動的に使用されます。
+
+送信設定を変更する場合は、このファイルを直接編集するか、`send-config.properties` ファイルを削除して再度 `send` コマンドを実行してください。
 
 ## 使用例
 
@@ -139,11 +172,24 @@ work-report:
 
 4. CSVデータで報告書を更新
    ```bash
-   shell:> update-file --file "田中太郎_202506_作業報告書.xls" --csv "202506_work_data.csv"
+   shell:> save
    ```
    出力: `更新完了: 15 件`
 
 5. 完了！ファイルは `local-data/output/` に保存されています
+
+6. ファイルを送信する（オプション）
+   ```bash
+   shell:> send --file "田中太郎_202506_作業報告書.xls"
+   ```
+   出力:
+   ```
+   ファイルを送信しました:
+   - 元ファイル: 田中太郎_202506_作業報告書.xls
+   - ZIP: /path/to/send/directory/田中太郎_202506_作業報告書.zip
+   - パスワード: a1b2c3d4
+   - パスワード保存先: /path/to/send/directory/work/2025/202506/password.txt
+   ```
 
 ## エラーハンドリング
 - **テンプレートファイルなし**: テンプレートファイルが見つからない場合、エラーメッセージが表示されます
