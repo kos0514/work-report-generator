@@ -88,7 +88,7 @@ public class ReportService {
             // テンプレートファイルの存在確認
             File templateFileObj = new File(templateFile);
             if (!templateFileObj.exists()) {
-                throw new IOException("テンプレートファイルが見つかりません: " + templateFile + 
+                throw new IOException("テンプレートファイルが見つかりません: " + templateFile +
                     "\n`local-data/templates/` ディレクトリに作業報告書のテンプレートファイル（`作業報告書 I社フォーマット.xls`）を配置してください。");
             }
 
@@ -170,66 +170,23 @@ public class ReportService {
             int updatedCount = 0;
             int clearedCount = 0;
 
-            // J列の内容の最大バイト数を保持する変数
-            BigDecimal maxByteCount = BigDecimal.ZERO;
-
             // 6. 各レコードを処理
             for (WorkRecord record : records) {
                 // 日付をキーとして該当行特定
                 int rowIndex = excelService.findRowByDate(sheet, record.getDate());
-
-                if (rowIndex >= 0) {
-                    // 7. 開始時刻・終了時刻・休憩時間・作業内容更新
-                    String startTimeCell = START_TIME_COLUMN + rowIndex;
-                    String endTimeCell = END_TIME_COLUMN + rowIndex;
-                    String breakTimeCell = BREAK_TIME_COLUMN + rowIndex;
-                    String workContentCell = WORK_CONTENT_COLUMN + rowIndex;
-
-                    excelService.setCellValue(sheet, startTimeCell, record.getStartTimeString());
-                    excelService.setCellValue(sheet, endTimeCell, record.getEndTimeString());
-                    excelService.setCellValue(sheet, breakTimeCell, record.getBreakTimeString());
-                    excelService.setCellValue(sheet, workContentCell, record.getWorkContent());
-
-                    // Q列のセルをクリア
-                    String qColumnCell = Q_COLUMN + rowIndex;
-                    excelService.clearCell(sheet, qColumnCell);
-
-                    // J列の内容のバイト数を計算し、最大値を更新
-                    BigDecimal byteCount = calculateByteCount(record.getWorkContent());
-                    maxByteCount = maxByteCount.max(byteCount);
-
-                    updatedCount++;
-                } else {
+                if (rowIndex == 0) {
                     logger.warn("該当日なし: {} ({})", record.getDate(), record.getDate().getDayOfWeek());
+                    continue;
                 }
+                processWorkRecord(sheet, record);
+                updatedCount++;
             }
 
             // 8. CSVファイルに含まれない平日の行をクリア
-            for (LocalDate workday : workdays) {
-                if (!csvDates.contains(workday)) {
-                    int rowIndex = excelService.findRowByDate(sheet, workday);
-                    if (rowIndex >= 0) {
-                        // 9. 開始時刻・終了時刻・休憩時間・作業内容をクリア
-                        String startTimeCell = START_TIME_COLUMN + rowIndex;
-                        String endTimeCell = END_TIME_COLUMN + rowIndex;
-                        String breakTimeCell = BREAK_TIME_COLUMN + rowIndex;
-                        String workContentCell = WORK_CONTENT_COLUMN + rowIndex;
-
-                        // 新しいclearCellメソッドを使用してセルをクリア
-                        excelService.clearCell(sheet, startTimeCell);
-                        excelService.clearCell(sheet, endTimeCell);
-                        excelService.clearCell(sheet, breakTimeCell);
-                        excelService.clearCell(sheet, workContentCell);
-
-                        clearedCount++;
-                        logger.debug("CSVに含まれない日付の行をクリア: {} ({})", workday, workday.getDayOfWeek());
-                    }
-                }
-            }
+            clearedCount = clearRowsNotInCsv(sheet, workdays, csvDates);
 
             // 9. 最大バイト数に基づいてQ列の幅を調整
-            logger.debug("J列の最大バイト数: {}", maxByteCount);
-            adjustQColumnWidthBasedOnByteCount(sheet, maxByteCount);
+            adjustQColumnWidthBasedOnByteCount(sheet, records);
 
             // 10. すべての計算式を再評価
             logger.info("計算式を再評価します");
@@ -296,7 +253,7 @@ public class ReportService {
                         excelService.setCellValue(sheet, endTimeCell, defaultEndTime);
                         excelService.setCellValue(sheet, breakTimeCell, defaultBreakTime);
 
-                        logger.debug("平日のデフォルト時間を設定: {} ({}) - 開始: {}, 終了: {}, 休憩: {}", 
+                        logger.debug("平日のデフォルト時間を設定: {} ({}) - 開始: {}, 終了: {}, 休憩: {}",
                             date, date.getDayOfWeek(), defaultStartTime, defaultEndTime, defaultBreakTime);
                     } else {
                         logger.warn("該当日の行が見つかりません: {} ({})", date, date.getDayOfWeek());
@@ -310,7 +267,7 @@ public class ReportService {
 
     /**
      * 対象月の全ての平日（出勤日）を取得します
-     * 
+     *
      * @param monthStr 対象月（yyyy/MM形式）
      * @return 平日（出勤日）のリスト
      */
@@ -350,7 +307,7 @@ public class ReportService {
 
     /**
      * 月の出勤日（平日）に対応するCSVファイルを作成します
-     * 
+     *
      * @param month 対象月（yyyy/MM形式）
      * @return 作成したCSVファイル名
      */
@@ -416,7 +373,7 @@ public class ReportService {
 
     /**
      * csvフォルダから最新の日付（yyyymm形式）のファイルを見つけます
-     * 
+     *
      * @return 最新のCSVファイル情報（ファイル名とyyyymm形式の日付）
      * @throws IllegalStateException CSVファイルが見つからない場合
      */
@@ -458,7 +415,7 @@ public class ReportService {
 
     /**
      * 指定した年月（yyyymm形式）を含むExcelファイルを見つけます
-     * 
+     *
      * @param yearMonth 年月（yyyymm形式）
      * @return 該当するExcelファイルのリスト
      */
@@ -492,7 +449,7 @@ public class ReportService {
 
     /**
      * 最新のCSVファイルを対応するExcelファイルに適用します
-     * 
+     *
      * @return 更新されたファイル数
      */
     public int saveLatestCsvToExcel() {
@@ -571,6 +528,72 @@ public class ReportService {
     }
 
     /**
+     * WorkRecordを処理し、Excelシートに反映します
+     *
+     * @param sheet 対象のシート
+     * @param record 処理対象のWorkRecord
+     */
+    private void processWorkRecord(HSSFSheet sheet, WorkRecord record) {
+        // 日付をキーとして該当行特定
+        int rowIndex = excelService.findRowByDate(sheet, record.getDate());
+
+        if (rowIndex >= 0) {
+            // 開始時刻・終了時刻・休憩時間・作業内容更新
+            String startTimeCell = START_TIME_COLUMN + rowIndex;
+            String endTimeCell = END_TIME_COLUMN + rowIndex;
+            String breakTimeCell = BREAK_TIME_COLUMN + rowIndex;
+            String workContentCell = WORK_CONTENT_COLUMN + rowIndex;
+
+            excelService.setCellValue(sheet, startTimeCell, record.getStartTimeString());
+            excelService.setCellValue(sheet, endTimeCell, record.getEndTimeString());
+            excelService.setCellValue(sheet, breakTimeCell, record.getBreakTimeString());
+            excelService.setCellValue(sheet, workContentCell, record.getWorkContent());
+
+            // Q列のセルをクリア
+            String qColumnCell = Q_COLUMN + rowIndex;
+            excelService.clearCell(sheet, qColumnCell);
+        }
+    }
+
+    /**
+     * CSVファイルに含まれない平日の行をクリアします
+     *
+     * @param sheet 対象のシート
+     * @param workdays 対象月の全ての平日
+     * @param csvDates CSVファイルに含まれる日付のリスト
+     * @return クリアした行数
+     */
+    private int clearRowsNotInCsv(HSSFSheet sheet, List<LocalDate> workdays, List<LocalDate> csvDates) {
+        int clearedCount = 0;
+
+        for (LocalDate workday : workdays) {
+            if (csvDates.contains(workday)) {
+                continue;
+            }
+
+            int rowIndex = excelService.findRowByDate(sheet, workday);
+            if (rowIndex >= 0) {
+                // 開始時刻・終了時刻・休憩時間・作業内容をクリア
+                String startTimeCell = START_TIME_COLUMN + rowIndex;
+                String endTimeCell = END_TIME_COLUMN + rowIndex;
+                String breakTimeCell = BREAK_TIME_COLUMN + rowIndex;
+                String workContentCell = WORK_CONTENT_COLUMN + rowIndex;
+
+                // セルをクリア
+                excelService.clearCell(sheet, startTimeCell);
+                excelService.clearCell(sheet, endTimeCell);
+                excelService.clearCell(sheet, breakTimeCell);
+                excelService.clearCell(sheet, workContentCell);
+
+                clearedCount++;
+                logger.debug("CSVに含まれない日付の行をクリア: {} ({})", workday, workday.getDayOfWeek());
+            }
+        }
+
+        return clearedCount;
+    }
+
+    /**
      * 文字列のバイト数を計算します
      * 1バイト文字は0.5、2バイト文字は1としてカウントします
      *
@@ -598,9 +621,19 @@ public class ReportService {
      * 1バイト文字は0.5、2バイト文字は1としてカウントします
      *
      * @param sheet   対象のシート
-     * @param maxByteCount 最大バイト数
+     * @param records 処理対象のWorkRecordリスト
      */
-    private void adjustQColumnWidthBasedOnByteCount(HSSFSheet sheet, BigDecimal maxByteCount) {
+    private void adjustQColumnWidthBasedOnByteCount(HSSFSheet sheet, List<WorkRecord> records) {
+        // J列の内容の最大バイト数を計算
+        BigDecimal maxByteCount = records.stream()
+            .map(WorkRecord::getWorkContent)
+            .filter(Objects::nonNull)
+            .map(this::calculateByteCount)
+            .max(BigDecimal::compareTo)
+            .orElse(BigDecimal.ZERO);
+
+        logger.debug("J列の最大バイト数: {}", maxByteCount);
+
         // 50バイトを超える場合に調整
         if (maxByteCount.compareTo(MAX_BYTE_COUNT) > 0) {
             // 1. 超過バイト数を計算（最大バイト数 - 閾値）
