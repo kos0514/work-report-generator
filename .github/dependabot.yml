@@ -1,0 +1,52 @@
+# Dependabotの設定ファイル
+# Dependabotは、GitHubが提供する依存関係の自動更新ツールです
+# 詳細な設定オプションは以下のURLで確認できます：
+# https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+
+# 設定ファイルのバージョン（現在は2が最新）
+version: 2
+
+# 更新設定のリスト（複数の設定を追加可能）
+updates:
+  # Gradle依存関係の更新設定
+  - package-ecosystem: "gradle"  # パッケージエコシステム（gradle, npm, pip, dockerなど）
+    directory: "/"               # 依存関係ファイルの場所（ルートディレクトリ）
+
+    # 更新チェックのスケジュール設定
+    schedule:
+      interval: "weekly"         # 更新頻度（daily, weekly, monthlyから選択）
+      day: "monday"              # 曜日指定（weeklyの場合）
+      time: "09:00"              # 時刻指定（24時間形式）
+      timezone: "Asia/Tokyo"     # タイムゾーン
+
+    # 同時に作成できるプルリクエストの最大数
+    open-pull-requests-limit: 10
+
+    # 更新プルリクエストのターゲットブランチ
+    target-branch: "master"
+
+    # プルリクエストに自動的に付けるラベル
+    labels:
+      - "dependencies"           # 依存関係の更新を示すラベル
+      - "security"               # セキュリティ関連の更新を示すラベル
+
+    # コミットメッセージの形式設定
+    commit-message:
+      prefix: "[修正]"           # コミットメッセージの接頭辞
+      include: "scope"           # 依存関係の範囲情報を含める
+
+    # 脆弱性のある依存関係の更新を優先する設定
+    vulnerability-alerts:
+      enabled: true              # 脆弱性アラートを有効化
+
+    # バージョン更新戦略
+    # auto: マイナーバージョンとパッチバージョンのみ自動更新
+    # widen: 範囲を広げる
+    # increase: バージョンを上げる
+    # increase-if-necessary: 必要な場合のみバージョンを上げる
+    versioning-strategy: auto
+
+    # 自動マージの設定（現在はコメントアウト）
+    # 脆弱性修正のPRのみ自動マージする場合に使用
+    # GitHub Actionsの設定（dependabot-auto-merge.yml）と連携
+    # auto-merge: true

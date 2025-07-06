@@ -1,0 +1,43 @@
+# プルリクエスト時に依存関係の変更をレビューし、脆弱性をチェックするワークフロー
+name: Dependency Review
+
+# ワークフローのトリガー設定
+on:
+  pull_request:
+    branches: [ "master" ]  # masterブランチへのプルリクエスト時に実行
+    # 以下の依存関係ファイルが変更された場合のみ実行（無駄なワークフロー実行を防ぐ）
+    paths:
+      - 'build.gradle'                           # Gradleのビルド設定ファイル
+      - 'gradle/wrapper/gradle-wrapper.properties' # Gradleラッパーのプロパティファイル
+      - 'settings.gradle'                        # Gradleの設定ファイル
+
+# 必要な権限の設定
+permissions:
+  contents: read           # リポジトリのコンテンツを読み取る権限
+  pull-requests: write     # プルリクエストにコメントを追加する権限
+
+# 実行するジョブの定義
+jobs:
+  # 依存関係レビューを行うジョブ
+  dependency-review:
+    # ジョブを実行する環境（Ubuntu最新版）
+    runs-on: ubuntu-latest
+
+    # 実行するステップの定義
+    steps:
+      # ステップ1: リポジトリのコードをチェックアウト
+      - name: Checkout Repository
+        uses: actions/checkout@v4  # GitHubが提供する公式アクション
+
+      # ステップ2: 依存関係のレビューを実行
+      # このステップでは、プルリクエストで変更された依存関係に脆弱性がないかチェック
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4  # GitHubが提供する公式アクション
+        with:
+          # 重大な脆弱性（CVSS 9.0-10.0）がある場合はワークフローを失敗させる
+          # 設定可能な値: low, moderate, high, critical
+          fail-on-severity: critical
+
+          # 依存関係の脆弱性に関する要約をプルリクエストにコメントとして追加
+          # これにより、レビュアーは脆弱性の情報を直接PRで確認できる
+          comment-summary-in-pr: true

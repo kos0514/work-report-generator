@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.5.0'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id 'org.owasp.dependencycheck' version '9.0.9'
 }
 
 group = 'com.kos0514'
@@ -59,4 +60,15 @@ tasks.named('test') {
 // 起動タスク設定
 bootRun {
 	standardInput = System.in
+}
+
+// OWASP Dependency Check設定
+dependencyCheck {
+	formats = ['HTML', 'SARIF']
+	failBuildOnCVSS = 9.0  // CVSS 9.0以上の脆弱性がある場合にビルドを失敗させる
+	suppressionFile = file('dependency-check-suppressions.xml')
+	analyzers {
+		assemblyEnabled = false
+		nodeEnabled = false
+	}
 }

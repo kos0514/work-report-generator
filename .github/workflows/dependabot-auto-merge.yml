@@ -1,0 +1,52 @@
+# Dependabotが作成したプルリクエストを自動的にマージするためのワークフロー
+name: Dependabot Auto-Merge
+
+# ワークフローのトリガー設定
+on:
+  pull_request:
+    types:  # 以下のプルリクエストイベントでワークフローを実行
+      - opened      # PRがオープンされたとき
+      - synchronize # PRが更新されたとき
+      - reopened    # 閉じられたPRが再度オープンされたとき
+      - labeled     # PRにラベルが追加されたとき
+
+# 実行するジョブの定義
+jobs:
+  # 自動マージを行うジョブ
+  auto-merge:
+    # ジョブを実行する環境（Ubuntu最新版）
+    runs-on: ubuntu-latest
+
+    # 条件：Dependabotが作成したプルリクエストのみを対象とする
+    # github.actorはPRを作成したユーザー/ボットの名前
+    if: github.actor == 'dependabot[bot]'
+
+    # 必要な権限の設定
+    permissions:
+      contents: write      # リポジトリのコンテンツを変更する権限
+      pull-requests: write # プルリクエストを操作する権限
+
+    # 実行するステップの定義
+    steps:
+      # ステップ1: Dependabotのメタデータを取得
+      # このステップでは、プルリクエストの詳細情報（更新タイプ、依存関係など）を取得
+      - name: Dependabot metadata
+        id: metadata  # 後続のステップで参照するためのID
+        uses: dependabot/fetch-metadata@v2  # 使用するアクション
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"  # GitHubの認証トークン
+
+      # ステップ2: セキュリティ更新またはパッチバージョン更新の場合のみ自動マージを実行
+      - name: Enable auto-merge for security updates
+        # 条件：パッチバージョン更新（x.y.Z）またはセキュリティ修正の場合のみ実行
+        if: steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.security-fix == 'true'
+        # 実行するコマンド
+        run: |
+          # プルリクエストを承認
+          gh pr review --approve "$PR_URL"
+          # プルリクエストを自動マージ（squashモード）に設定
+          gh pr merge --auto --squash "$PR_URL"
+        # 環境変数の設定
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}  # プルリクエストのURL
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHubの認証トークン
