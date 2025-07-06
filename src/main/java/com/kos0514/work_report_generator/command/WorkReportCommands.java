@@ -1,17 +1,12 @@
 package com.kos0514.work_report_generator.command;
 
-import com.kos0514.work_report_generator.service.ConfigService;
 import com.kos0514.work_report_generator.service.ReportService;
 import com.kos0514.work_report_generator.service.SendExcelFileService;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
 
 /** 作業報告書管理システムのCLIコマンドを定義するクラス */
 @Component
@@ -19,22 +14,8 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class WorkReportCommands {
 
-  private static final Logger logger = LoggerFactory.getLogger(WorkReportCommands.class);
-
   private final ReportService reportService;
   private final SendExcelFileService sendExcelFileService;
-  private final ConfigService configService;
-
-  /**
-   * 設定ファイルが存在することを確認し、存在しない場合は作成します
-   */
-  private void ensureConfigExists() {
-    try {
-      configService.ensureConfigExists();
-    } catch (IOException e) {
-      logger.warn("設定ファイルの確認中にエラーが発生しました: {}", e.getMessage());
-    }
-  }
 
   @ShellMethod(value = "新規報告書ファイルを作成", key = "create-file")
   public String createFile(
@@ -43,8 +24,6 @@ public class WorkReportCommands {
       @ShellOption("--client") String client // クライアント名
       ) {
     try {
-      // 設定ファイルが存在することを確認
-      ensureConfigExists();
 
       // Excelファイル作成
       String excelFileName = reportService.createReport(month, user, client);
@@ -64,8 +43,6 @@ public class WorkReportCommands {
       @ShellOption("--csv") String csvFile // CSVファイル名
       ) {
     try {
-      // 設定ファイルが存在することを確認
-      ensureConfigExists();
 
       int updatedRows = reportService.updateFromCsv(fileName, csvFile);
       return "更新完了: " + updatedRows + " 件";
@@ -77,8 +54,6 @@ public class WorkReportCommands {
   @ShellMethod(value = "最新のCSVファイルを対応するExcelファイルに適用", key = "save")
   public String saveLatestCsv() {
     try {
-      // 設定ファイルが存在することを確認
-      ensureConfigExists();
 
       int updatedFiles = reportService.saveLatestCsvToExcel();
       if (updatedFiles > 0) {

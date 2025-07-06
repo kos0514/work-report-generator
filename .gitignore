@@ -9,12 +9,13 @@
 build/
 !gradle/wrapper/gradle-wrapper.jar
 
-# Local data (only .gitkeep files are managed by Git)
+# Local data (only .gitkeep files and config files are managed by Git)
 local-data/*
 !local-data/.gitkeep
 !local-data/*/
 local-data/*/*
 !local-data/*/.gitkeep
+!local-data/config/send-config.properties
 
 # Java
 *.class

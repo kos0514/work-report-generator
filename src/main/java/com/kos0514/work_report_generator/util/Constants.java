@@ -17,7 +17,7 @@ public final class Constants {
         public static final String EXCEL_EXTENSION = ".xls";
         public static final String ZIP_EXTENSION = ".zip";
         public static final String PASSWORD_FILE_NAME = "password.txt";
-        
+
         // ディレクトリ構造
         public static final String WORK_DIR = "work";
         public static final String CONFIG_DIR = "config";
