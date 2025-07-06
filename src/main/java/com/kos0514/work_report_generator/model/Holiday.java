@@ -4,7 +4,9 @@ import java.time.LocalDate;
 import java.util.Objects;
 import lombok.Value;
 
-/** 祝日を表す値オブジェクト */
+/**
+ * 祝日を表す値オブジェクト
+ */
 @Value
 public class Holiday {
   LocalDate date; // 祝日月日

@@ -6,7 +6,9 @@ import java.time.LocalDate;
 import java.util.Objects;
 import lombok.Value;
 
-/** 作業記録を表す値オブジェクト */
+/**
+ * 作業記録を表す値オブジェクト
+ */
 @Value
 public class WorkRecord {
   LocalDate date; // 日付

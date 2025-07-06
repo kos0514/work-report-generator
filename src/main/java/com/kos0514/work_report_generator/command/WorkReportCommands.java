@@ -8,7 +8,9 @@ import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
 import org.springframework.stereotype.Component;
 
-/** 作業報告書管理システムのCLIコマンドを定義するクラス */
+/**
+ * 作業報告書管理システムのCLIコマンドを定義するクラス
+ */
 @Component
 @ShellComponent
 @RequiredArgsConstructor
