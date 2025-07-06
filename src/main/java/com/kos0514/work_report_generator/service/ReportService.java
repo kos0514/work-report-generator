@@ -20,6 +20,7 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.hssf.usermodel.HSSFFormulaEvaluator;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
@@ -61,6 +62,12 @@ public class ReportService {
     @Value("${work-report.template-file}")
     private String templateFile;
 
+    /**
+     * -- GETTER --
+     *  出力ディレクトリのパスを取得します
+     *
+     */
+    @Getter
     @Value("${work-report.output-dir}")
     private String outputDir;
 
@@ -522,7 +529,12 @@ public class ReportService {
                    最新のCSVファイルを対応するExcelファイルに適用します
                    例: save
 
-                4. help
+                4. send [--file <ファイル名>]
+                   Excelファイルをパスワード付きZIPにして送信します
+                   例: send
+                   例: send --file "田中太郎_202506_作業報告書.xls"
+
+                5. help
                    このヘルプを表示します
 
                 CSVファイル形式:
@@ -536,11 +548,6 @@ public class ReportService {
                 - テンプレートファイル: " + templateFile + "
                 """;
     }
-
-    /**
-     * CSVファイル情報を保持するレコードクラス
-     */
-    public record CsvFileInfo(String fileName, String yearMonth) {}
 
     /**
      * 対象月文字列（yyyy/mm形式）を解析し、対応する日付（Date型）を返します。
@@ -564,7 +571,7 @@ public class ReportService {
                 int monthValue = Integer.parseInt(parts[1]);
 
                 // 年と月の値が有効な範囲内かを検証
-                if (year >= MIN_VALID_YEAR && year <= MAX_VALID_YEAR && 
+                if (year >= MIN_VALID_YEAR && year <= MAX_VALID_YEAR &&
                     monthValue >= MIN_VALID_MONTH && monthValue <= MAX_VALID_MONTH) {
                     // 月の値（1-12）に対応するCalendarの月定数を取得
                     int calendarMonth = switch (monthValue) {
@@ -607,5 +614,28 @@ public class ReportService {
         }
 
         return targetDate;
+    }
+
+    /**
+     * CSVファイル情報を保持するレコードクラス
+     */
+    public record CsvFileInfo(String fileName, String yearMonth) {}
+
+    /**
+     * ファイル名から年月を抽出します（user_yyyymm_作業報告書.xls）
+     *
+     * @param fileName ファイル名
+     * @return 年月（yyyymm形式）、抽出できない場合はnull
+     */
+    public String extractYearMonthFromFileName(String fileName) {
+        // ReportService.updateFromCsv と同じ方法で年月を抽出
+        String[] parts = fileName.split("_");
+        if (parts.length >= 2) {
+            String yearMonth = parts[1];
+            if (yearMonth.length() == 6 && yearMonth.matches("\\d{6}")) {
+                return yearMonth;
+            }
+        }
+        return null;
     }
 }
