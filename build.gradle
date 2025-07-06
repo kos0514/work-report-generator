@@ -36,7 +36,7 @@ dependencies {
 	implementation 'org.apache.poi:poi-scratchpad:5.2.4'
 
 	// CSV処理
-	implementation 'com.opencsv:opencsv:5.8'
+	implementation 'com.opencsv:opencsv:5.11.2'
 
 	// JSON処理
 	implementation 'com.fasterxml.jackson.core:jackson-databind'
