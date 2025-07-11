@@ -20,6 +20,9 @@ public final class Constants {
     public static final String WORK_DIR = "work";
     public static final String CONFIG_DIR = "config";
     public static final String SEND_CONFIG_FILE = "send-config.properties";
+
+    // テンプレートファイル
+    public static final String SEND_CONFIG_TEMPLATE_PATH = "/templates/send-config.template.properties";
   }
 
   /** パスワード生成関連の定数 */

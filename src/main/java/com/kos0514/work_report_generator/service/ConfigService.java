@@ -4,6 +4,7 @@ import com.kos0514.work_report_generator.util.Constants;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -55,12 +56,30 @@ public class ConfigService {
   private Properties loadSendConfig() {
     Properties props = new Properties();
 
-    try (FileInputStream fis = new FileInputStream(SEND_CONFIG_PATH)) {
-      props.load(fis);
-      logger.debug("設定ファイルを読み込みました: {}", SEND_CONFIG_PATH);
+    try {
+      Path configFile = Paths.get(SEND_CONFIG_PATH);
+      if (Files.exists(configFile)) {
+        try (FileInputStream fis = new FileInputStream(SEND_CONFIG_PATH)) {
+          props.load(fis);
+          logger.debug("設定ファイルを読み込みました: {}", SEND_CONFIG_PATH);
+          return props;
+        }
+      }
+
+      // テンプレートファイルから初期設定を作成
+      try (InputStream templateStream = getClass().getResourceAsStream(Constants.Files.SEND_CONFIG_TEMPLATE_PATH)) {
+        if (templateStream != null) {
+          props.load(templateStream);
+          logger.info("テンプレートから設定ファイルを作成します: {}", SEND_CONFIG_PATH);
+          // 設定ファイルを保存
+          saveSendConfig(props);
+        } else {
+          // テンプレートが見つからない場合は例外をスロー
+          throw new IOException("テンプレートファイルが見つかりません: " + Constants.Files.SEND_CONFIG_TEMPLATE_PATH);
+        }
+      }
     } catch (IOException e) {
       logger.error("設定ファイルの読み込みに失敗しました: {}", e.getMessage());
-      throw new RuntimeException("設定ファイルの読み込みに失敗しました: " + SEND_CONFIG_PATH, e);
     }
 
     return props;
@@ -73,13 +92,6 @@ public class ConfigService {
    * @throws IOException 設定ファイルの保存に失敗した場合
    */
   private void saveSendConfig(Properties props) throws IOException {
-    // 設定ディレクトリが存在しない場合は作成
-    Path configDir = Paths.get(CONFIG_PATH);
-    if (!Files.exists(configDir)) {
-      Files.createDirectories(configDir);
-      logger.debug("設定ディレクトリを作成しました: {}", CONFIG_PATH);
-    }
-
     // 設定ファイルを保存
     try (FileOutputStream fos = new FileOutputStream(SEND_CONFIG_PATH)) {
       props.store(fos, "送信設定");
