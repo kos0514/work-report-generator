@@ -4,10 +4,8 @@ import com.kos0514.work_report_generator.util.Constants;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.Random;
 import lombok.RequiredArgsConstructor;
 import net.lingala.zip4j.ZipFile;
@@ -29,6 +27,7 @@ public class ZipService {
   private static final Logger logger = LoggerFactory.getLogger(ZipService.class);
 
   private final ConfigService configService;
+  private final FileService fileService;
 
   /**
    * ファイルをパスワード付きZIPファイルに圧縮します パスワードは内部で生成され、戻り値として返されます
@@ -45,8 +44,8 @@ public class ZipService {
 
     // 親ディレクトリが存在しない場合は作成
     Path zipFileParent = Paths.get(zipFilePath).getParent();
-    if (zipFileParent != null && !Files.exists(zipFileParent)) {
-      Files.createDirectories(zipFileParent);
+    if (zipFileParent != null) {
+      fileService.createDirectoryIfNotExists(zipFileParent);
     }
 
     // ZIPファイル作成
@@ -103,21 +102,12 @@ public class ZipService {
     String year = yearMonth.substring(0, 4);
 
     // パスワード保存先ディレクトリ作成
-    String passwordDirPath =
-        Paths.get(sendDir, Constants.Files.WORK_DIR, year, yearMonth).toString();
-    Path passwordDir = Paths.get(passwordDirPath);
-    if (!Files.exists(passwordDir)) {
-      Files.createDirectories(passwordDir);
-    }
+    Path passwordDir = fileService.createWorkDirectoryForYearMonth(sendDir, Constants.Files.WORK_DIR, year, yearMonth);
+    String passwordDirPath = passwordDir.toString();
 
     // パスワードをファイルに保存
     Path passwordFile = Paths.get(passwordDirPath, Constants.Files.PASSWORD_FILE_NAME);
-    Files.writeString(
-        passwordFile,
-        password,
-        Files.exists(passwordFile)
-            ? StandardOpenOption.TRUNCATE_EXISTING
-            : StandardOpenOption.CREATE);
+    fileService.writeStringToFile(passwordFile, password);
 
     logger.info("パスワードをファイルに保存しました: {}", passwordFile);
   }
