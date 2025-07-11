@@ -3,7 +3,6 @@ package com.kos0514.work_report_generator.service;
 import com.kos0514.work_report_generator.util.Constants;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Scanner;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +20,8 @@ public class SendExcelFileService {
   private final ReportService reportService;
   private final ZipService zipService;
   private final ConfigService configService;
+  private final MailTemplateService mailTemplateService;
+  private final UserInputService userInputService;
 
   /**
    * Excelファイルをパスワード付きZIPにして送信します
@@ -34,9 +35,7 @@ public class SendExcelFileService {
       String sendDir = configService.getSendDirectory();
       if (sendDir == null || sendDir.isEmpty()) {
         // 送信先ディレクトリが設定されていない場合は設定を促す
-        System.out.print("送信先ディレクトリを入力してください: ");
-        Scanner scanner = new Scanner(System.in);
-        String newDir = scanner.nextLine().trim();
+        String newDir = userInputService.readLine("送信先ディレクトリを入力してください: ");
         configService.setSendDirectory(newDir);
         sendDir = newDir;
       }
@@ -76,25 +75,26 @@ public class SendExcelFileService {
       // パスワードをファイルに保存
       zipService.savePasswordToFile(yearMonth, password);
 
+      // メール文面を生成して保存
+      mailTemplateService.generateAndSaveMailTemplates(yearMonth, password);
+
       logger.info("ファイルを送信しました: {}", zipFilePath);
 
-      return "ファイルを送信しました:\n"
-          + "- 元ファイル: "
-          + fileName
-          + "\n"
-          + "- ZIP: "
-          + zipFilePath
-          + "\n"
-          + "- パスワード: "
-          + password
-          + "\n"
-          + "- パスワード保存先: "
-          + Paths.get(
-              sendDir,
-              Constants.Files.WORK_DIR,
-              yearMonth.substring(0, 4),
-              yearMonth,
-              Constants.Files.PASSWORD_FILE_NAME);
+      StringBuilder resultMessage = new StringBuilder();
+      resultMessage.append("ファイルを送信しました:\n");
+      resultMessage.append("- 元ファイル: ").append(fileName).append("\n");
+      resultMessage.append("- ZIP: ").append(zipFilePath).append("\n");
+      resultMessage.append("- パスワード: ").append(password).append("\n");
+
+      String mailDirPath = Paths.get(
+          sendDir,
+          Constants.Files.WORK_DIR,
+          yearMonth.substring(0, 4),
+          yearMonth).toString();
+
+      resultMessage.append("- メール文面保存先: ").append(mailDirPath).append("\n");
+
+      return resultMessage.toString();
     } catch (Exception e) {
       logger.error("ファイル送信中にエラーが発生しました", e);
       return "エラー: " + e.getMessage();

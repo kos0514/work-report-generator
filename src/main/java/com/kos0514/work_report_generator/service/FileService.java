@@ -47,6 +47,20 @@ public class FileService {
   }
 
   /**
+   * ファイルからテキストを読み込みます
+   *
+   * @param filePath 読み込むファイルのパス
+   * @return ファイルの内容
+   * @throws IOException ファイル読み込みに失敗した場合
+   */
+  public String readStringFromFile(Path filePath) throws IOException {
+    if (!Files.exists(filePath)) {
+      throw new IOException("ファイルが見つかりません: " + filePath);
+    }
+    return Files.readString(filePath);
+  }
+
+  /**
    * ファイルが存在するかチェックします
    *
    * @param path チェックするパス
