@@ -9,11 +9,31 @@
 build/
 !gradle/wrapper/gradle-wrapper.jar
 
-# Local data (only .gitkeep files are managed by Git)
+# Local data directories
 local-data/*
 !local-data/.gitkeep
-local-data/*/*
-!local-data/*/.gitkeep
+!local-data/README.md
+
+# ディレクトリ自体を追跡対象にする
+!local-data/config/
+!local-data/csv/
+!local-data/mail/
+!local-data/output/
+!local-data/templates/
+
+# ディレクトリ内のファイルはすべて無視（.gitkeepを除く）
+local-data/config/*
+local-data/csv/*
+local-data/mail/*
+local-data/output/*
+local-data/templates/*
+
+# 各ディレクトリ内の.gitkeepファイルは追跡対象にする
+!local-data/config/.gitkeep
+!local-data/csv/.gitkeep
+!local-data/mail/.gitkeep
+!local-data/output/.gitkeep
+!local-data/templates/.gitkeep
 
 # Java
 *.class
