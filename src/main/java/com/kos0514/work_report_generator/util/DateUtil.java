@@ -3,7 +3,9 @@ package com.kos0514.work_report_generator.util;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import lombok.experimental.UtilityClass;
 
+@UtilityClass
 public class DateUtil {
   private static final DateTimeFormatter CSV_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy/M/d");
 
