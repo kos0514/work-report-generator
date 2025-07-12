@@ -26,11 +26,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.hssf.usermodel.HSSFFormulaEvaluator;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -39,9 +38,8 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ReportService {
-
-  private static final Logger logger = LoggerFactory.getLogger(ReportService.class);
 
   // I社フォーマット用定数（ハードコード）
   private static final String TARGET_MONTH_CELL = "B7";
@@ -116,7 +114,7 @@ public class ReportService {
       excelService.saveWorkbook(workbook, outputPath);
       workbook.close();
 
-      logger.info("ファイル作成完了: {}", fileName);
+      log.info("ファイル作成完了: {}", fileName);
       return fileName;
 
     } catch (IOException e) {
@@ -150,7 +148,7 @@ public class ReportService {
       }
 
       if (yearMonth == null) {
-        logger.warn("ファイル名から対象月を抽出できませんでした: {}", fileName);
+        log.warn("ファイル名から対象月を抽出できませんでした: {}", fileName);
         return 0;
       }
 
@@ -168,7 +166,7 @@ public class ReportService {
         // 日付をキーとして該当行特定
         int rowIndex = excelService.findRowByDate(sheet, record.getDate());
         if (rowIndex == 0) {
-          logger.warn("該当日なし: {} ({})", record.getDate(), record.getDate().getDayOfWeek());
+          log.warn("該当日なし: {} ({})", record.getDate(), record.getDate().getDayOfWeek());
           continue;
         }
         processWorkRecord(sheet, record);
@@ -182,14 +180,14 @@ public class ReportService {
       adjustQColumnWidthBasedOnByteCount(sheet, records);
 
       // 10. すべての計算式を再評価
-      logger.info("計算式を再評価します");
+      log.info("計算式を再評価します");
       HSSFFormulaEvaluator.evaluateAllFormulaCells(workbook);
 
       // 11. ファイル保存
       excelService.saveWorkbook(workbook, excelPath);
       workbook.close();
 
-      logger.info("CSV更新完了: {}件更新, {}件クリア", updatedCount, clearedCount);
+      log.info("CSV更新完了: {}件更新, {}件クリア", updatedCount, clearedCount);
       return updatedCount;
 
     } catch (IOException e) {
@@ -210,7 +208,7 @@ public class ReportService {
       // 月の解析
       String[] parts = monthStr.split("/");
       if (parts.length != 2) {
-        logger.warn("月形式が不正です: {}", monthStr);
+        log.warn("月形式が不正です: {}", monthStr);
         return;
       }
 
@@ -246,7 +244,7 @@ public class ReportService {
             excelService.setCellValue(sheet, endTimeCell, defaultEndTime);
             excelService.setCellValue(sheet, breakTimeCell, defaultBreakTime);
 
-            logger.debug(
+            log.debug(
                 "平日のデフォルト時間を設定: {} ({}) - 開始: {}, 終了: {}, 休憩: {}",
                 date,
                 date.getDayOfWeek(),
@@ -254,12 +252,12 @@ public class ReportService {
                 defaultEndTime,
                 defaultBreakTime);
           } else {
-            logger.warn("該当日の行が見つかりません: {} ({})", date, date.getDayOfWeek());
+            log.warn("該当日の行が見つかりません: {} ({})", date, date.getDayOfWeek());
           }
         }
       }
     } catch (Exception e) {
-      logger.error("平日のデフォルト時間設定中にエラーが発生しました: {}", e.getMessage());
+      log.error("平日のデフォルト時間設定中にエラーが発生しました: {}", e.getMessage());
     }
   }
 
@@ -276,7 +274,7 @@ public class ReportService {
       // 月の解析
       String[] parts = monthStr.split("/");
       if (parts.length != 2) {
-        logger.warn("月形式が不正です: {}", monthStr);
+        log.warn("月形式が不正です: {}", monthStr);
         return workdays;
       }
 
@@ -297,7 +295,7 @@ public class ReportService {
         }
       }
     } catch (Exception e) {
-      logger.error("平日リスト取得中にエラーが発生しました: {}", e.getMessage());
+      log.error("平日リスト取得中にエラーが発生しました: {}", e.getMessage());
     }
 
     return workdays;
@@ -350,14 +348,14 @@ public class ReportService {
                   date, defaultStartTime, defaultEndTime, defaultBreakTime, emptyWorkContent);
           records.add(record);
 
-          logger.debug("出勤日のレコードを追加: {} ({})", date, date.getDayOfWeek());
+          log.debug("出勤日のレコードを追加: {} ({})", date, date.getDayOfWeek());
         }
       }
 
       // 5. CSVファイル作成
       csvService.writeCsv(records, csvPath);
 
-      logger.info("CSVファイル作成完了: {}", fileName);
+      log.info("CSVファイル作成完了: {}", fileName);
       return fileName;
 
     } catch (Exception e) {
@@ -399,7 +397,7 @@ public class ReportService {
       }
 
       if (latestCsvFile.isPresent()) {
-        logger.info("最新のCSVファイルを見つけました: {}", latestCsvFile.get().fileName());
+        log.info("最新のCSVファイルを見つけました: {}", latestCsvFile.get().fileName());
         return latestCsvFile.get();
       } else {
         throw new IllegalStateException("CSVファイルが見つかりません: " + csvDir);
@@ -437,7 +435,7 @@ public class ReportService {
                 });
       }
 
-      logger.info("{}年月のExcelファイルを{}件見つけました", yearMonth, matchingFiles.size());
+      log.info("{}年月のExcelファイルを{}件見つけました", yearMonth, matchingFiles.size());
       return matchingFiles;
     } catch (IOException e) {
       throw new UncheckedIOException("Excelファイルの検索中にエラーが発生しました", e);
@@ -460,7 +458,7 @@ public class ReportService {
       List<String> excelFiles = findExcelFilesByYearMonth(yearMonth);
 
       if (excelFiles.isEmpty()) {
-        logger.warn("{}年月のExcelファイルが見つかりません", yearMonth);
+        log.warn("{}年月のExcelファイルが見つかりません", yearMonth);
         return 0;
       }
 
@@ -469,16 +467,16 @@ public class ReportService {
       for (String excelFileName : excelFiles) {
         try {
           int updatedRows = updateFromCsv(excelFileName, csvFileName);
-          logger.info("ファイル更新完了: {} ({}行更新)", excelFileName, updatedRows);
+          log.info("ファイル更新完了: {} ({}行更新)", excelFileName, updatedRows);
           updatedFiles++;
         } catch (Exception e) {
-          logger.error("ファイル更新中にエラーが発生しました: {}", excelFileName, e);
+          log.error("ファイル更新中にエラーが発生しました: {}", excelFileName, e);
         }
       }
 
       return updatedFiles;
     } catch (Exception e) {
-      logger.error("保存処理中にエラーが発生しました", e);
+      log.error("保存処理中にエラーが発生しました", e);
       throw e;
     }
   }
@@ -582,7 +580,7 @@ public class ReportService {
         excelService.clearCell(sheet, workContentCell);
 
         clearedCount++;
-        logger.debug("CSVに含まれない日付の行をクリア: {} ({})", workday, workday.getDayOfWeek());
+        log.debug("CSVに含まれない日付の行をクリア: {} ({})", workday, workday.getDayOfWeek());
       }
     }
 
@@ -627,7 +625,7 @@ public class ReportService {
             .max(BigDecimal::compareTo)
             .orElse(BigDecimal.ZERO);
 
-    logger.debug("J列の最大バイト数: {}", maxByteCount);
+    log.debug("J列の最大バイト数: {}", maxByteCount);
 
     // 50バイトを超える場合に調整
     if (maxByteCount.compareTo(MAX_BYTE_COUNT) > 0) {
@@ -695,15 +693,15 @@ public class ReportService {
           targetDate = calendar.getTime();
           validFormat = true;
 
-          logger.debug("有効な日付形式を処理: {}", month);
+          log.debug("有効な日付形式を処理: {}", month);
         } else {
-          logger.warn("無効な年または月の値: {}", month);
+          log.warn("無効な年または月の値: {}", month);
         }
       } catch (NumberFormatException e) {
-        logger.warn("数値への変換に失敗: {}", month, e);
+        log.warn("数値への変換に失敗: {}", month, e);
       }
     } else {
-      logger.warn("無効な日付形式: {}", month);
+      log.warn("無効な日付形式: {}", month);
     }
 
     // 無効な入力の場合は当月の1日を設定
@@ -711,7 +709,7 @@ public class ReportService {
       calendar.setTime(new Date()); // 現在の日付を設定
       calendar.set(Calendar.DAY_OF_MONTH, 1); // 当月の1日
       targetDate = calendar.getTime();
-      logger.info("無効な入力のため当月の1日を設定します");
+      log.info("無効な入力のため当月の1日を設定します");
     }
 
     return targetDate;

@@ -16,8 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
@@ -25,9 +24,8 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MailTemplateService {
-
-    private static final Logger logger = LoggerFactory.getLogger(MailTemplateService.class);
     private static final String LOCAL_DATA_DIR = "./local-data";
     private static final String MAIL_TEMPLATE_DIR = LOCAL_DATA_DIR + "/" + Constants.Files.MAIL_DIR;
     private static final DateTimeFormatter YEAR_MONTH_FORMATTER = DateTimeFormatter.ofPattern("yyyy年MM月");
@@ -85,12 +83,12 @@ public class MailTemplateService {
 
         // テンプレートファイルが存在しない場合、リソースからコピーする
         if (!fileService.exists(templateFile)) {
-            logger.info("メールテンプレートファイルが見つかりません。デフォルトテンプレートを作成します: {}", templateFile);
+            log.info("メールテンプレートファイルが見つかりません。デフォルトテンプレートを作成します: {}", templateFile);
             try (InputStream templateStream = getClass().getResourceAsStream(Constants.Files.MAIL_TEMPLATE_TEMPLATE_PATH)) {
                 if (templateStream != null) {
                     String templateContent = new String(templateStream.readAllBytes(), StandardCharsets.UTF_8);
                     fileService.writeStringToFile(templateFile, templateContent);
-                    logger.info("デフォルトメールテンプレートを作成しました: {}", templateFile);
+                    log.info("デフォルトメールテンプレートを作成しました: {}", templateFile);
                 } else {
                     throw new IOException("デフォルトメールテンプレートが見つかりません: " + Constants.Files.MAIL_TEMPLATE_TEMPLATE_PATH);
                 }
@@ -165,6 +163,6 @@ public class MailTemplateService {
         Path combinedFile = Paths.get(mailDirPath, Constants.Files.MAIL_COMBINED_FILE);
         fileService.writeStringToFile(combinedFile, combinedContent);
 
-        logger.info("メール文面をファイルに保存しました: {}", mailDirPath);
+        log.info("メール文面をファイルに保存しました: {}", mailDirPath);
     }
 }

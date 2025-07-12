@@ -5,15 +5,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /** ファイル操作を集約するサービスクラス ディレクトリ作成やファイル読み書きの重複コードを削減します */
 @Service
+@Slf4j
 public class FileService {
-
-  private static final Logger logger = LoggerFactory.getLogger(FileService.class);
   private static final String WORK_DIR_FORMAT = "%s/%s/%s/%s";
 
   /**
@@ -26,7 +24,7 @@ public class FileService {
   public Path createDirectoryIfNotExists(Path dirPath) throws IOException {
     if (!Files.exists(dirPath)) {
       Files.createDirectories(dirPath);
-      logger.debug("ディレクトリを作成しました: {}", dirPath);
+      log.debug("ディレクトリを作成しました: {}", dirPath);
     }
     return dirPath;
   }
@@ -43,7 +41,7 @@ public class FileService {
         filePath,
         content,
         Files.exists(filePath) ? StandardOpenOption.TRUNCATE_EXISTING : StandardOpenOption.CREATE);
-    logger.debug("ファイルに書き込みました: {}", filePath);
+    log.debug("ファイルに書き込みました: {}", filePath);
   }
 
   /**

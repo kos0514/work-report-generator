@@ -15,8 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
@@ -25,9 +24,8 @@ import org.springframework.stereotype.Service;
  * <p>このクラスは作業記録CSVファイルや祝日データCSVファイルの読み込み機能を提供します。
  */
 @Service
+@Slf4j
 public class CsvService {
-
-  private static final Logger logger = LoggerFactory.getLogger(CsvService.class);
 
   /**
    * 作業記録CSVファイルを読み込み、WorkRecordオブジェクトのリストを返します
@@ -67,7 +65,7 @@ public class CsvService {
 
             records.add(WorkRecord.of(date, startTime, endTime, breakTime, workContent));
           } catch (Exception e) {
-            logger.warn("CSV行の処理中にエラーが発生しました: {} - {}", String.join(",", line), e.getMessage());
+            log.warn("CSV行の処理中にエラーが発生しました: {} - {}", String.join(",", line), e.getMessage());
           }
         }
       }
@@ -104,7 +102,7 @@ public class CsvService {
             String name = line[1].trim();
             holidays.add(Holiday.of(date, name));
           } catch (Exception e) {
-            logger.warn("祝日CSV行の処理中にエラーが発生しました: {} - {}", String.join(",", line), e.getMessage());
+            log.warn("祝日CSV行の処理中にエラーが発生しました: {} - {}", String.join(",", line), e.getMessage());
           }
         }
       }
@@ -146,7 +144,7 @@ public class CsvService {
         writer.writeNext(line);
       }
 
-      logger.info("CSVファイルを作成しました: {}", csvFilePath);
+      log.info("CSVファイルを作成しました: {}", csvFilePath);
     } catch (IOException e) {
       throw new UncheckedIOException("CSVファイルの作成中にエラーが発生しました: " + csvFilePath, e);
     }

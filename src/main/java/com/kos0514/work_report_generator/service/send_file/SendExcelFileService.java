@@ -9,8 +9,7 @@ import com.kos0514.work_report_generator.util.Constants;
 import java.nio.file.Paths;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
@@ -18,9 +17,8 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SendExcelFileService {
-
-  private static final Logger logger = LoggerFactory.getLogger(SendExcelFileService.class);
 
   private final ReportService reportService;
   private final ZipService zipService;
@@ -83,7 +81,7 @@ public class SendExcelFileService {
       // メール文面を生成して保存
       mailTemplateService.generateAndSaveMailTemplates(yearMonth, password);
 
-      logger.info("ファイルを送信しました: {}", zipFilePath);
+      log.info("ファイルを送信しました: {}", zipFilePath);
 
       StringBuilder resultMessage = new StringBuilder();
       resultMessage.append("ファイルを送信しました:\n");
@@ -101,7 +99,7 @@ public class SendExcelFileService {
 
       return resultMessage.toString();
     } catch (Exception e) {
-      logger.error("ファイル送信中にエラーが発生しました", e);
+      log.error("ファイル送信中にエラーが発生しました", e);
       return "エラー: " + e.getMessage();
     }
   }

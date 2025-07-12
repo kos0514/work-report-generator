@@ -10,8 +10,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -22,9 +21,8 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class HolidayService {
-
-  private static final Logger logger = LoggerFactory.getLogger(HolidayService.class);
   private final CsvService csvService;
   private final ResourceLoader resourceLoader;
 
@@ -47,12 +45,12 @@ public class HolidayService {
       }
 
       holidays = csvService.readHolidayCsv(tempFile.getAbsolutePath());
-      logger.info("祝日データ読み込み完了: {}件", holidays.size());
+      log.info("祝日データ読み込み完了: {}件", holidays.size());
     } catch (IOException e) {
-      logger.error("祝日データの読み込みに失敗しました: {}", e.getMessage());
+      log.error("祝日データの読み込みに失敗しました: {}", e.getMessage());
       throw new UncheckedIOException("祝日データの読み込みに失敗しました", e);
     } catch (Exception e) {
-      logger.error("祝日データの処理中にエラーが発生しました: {}", e.getMessage());
+      log.error("祝日データの処理中にエラーが発生しました: {}", e.getMessage());
       holidays = List.of(); // 空のリストで継続
     }
   }

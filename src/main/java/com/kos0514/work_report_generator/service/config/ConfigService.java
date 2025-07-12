@@ -9,17 +9,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
  *  設定ファイルの読み書きを行うサービスクラス
  */
 @Service
+@Slf4j
 public class ConfigService {
-
-  private static final Logger logger = LoggerFactory.getLogger(ConfigService.class);
   private static final String LOCAL_DATA_DIR = "./local-data";
   private static final String CONFIG_PATH = LOCAL_DATA_DIR + "/" + Constants.Files.CONFIG_DIR;
   private static final String SEND_CONFIG_PATH =
@@ -45,7 +43,7 @@ public class ConfigService {
     Properties props = loadSendConfig();
     props.setProperty(Constants.ConfigKeys.SEND_DIRECTORY, directory);
     saveSendConfig(props);
-    logger.info("送信先ディレクトリを設定しました: {}", directory);
+    log.info("送信先ディレクトリを設定しました: {}", directory);
   }
 
   /**
@@ -61,7 +59,7 @@ public class ConfigService {
       if (Files.exists(configFile)) {
         try (FileInputStream fis = new FileInputStream(SEND_CONFIG_PATH)) {
           props.load(fis);
-          logger.debug("設定ファイルを読み込みました: {}", SEND_CONFIG_PATH);
+          log.debug("設定ファイルを読み込みました: {}", SEND_CONFIG_PATH);
           return props;
         }
       }
@@ -70,7 +68,7 @@ public class ConfigService {
       try (InputStream templateStream = getClass().getResourceAsStream(Constants.Files.SEND_CONFIG_TEMPLATE_PATH)) {
         if (templateStream != null) {
           props.load(templateStream);
-          logger.info("テンプレートから設定ファイルを作成します: {}", SEND_CONFIG_PATH);
+          log.info("テンプレートから設定ファイルを作成します: {}", SEND_CONFIG_PATH);
           // 設定ファイルを保存
           saveSendConfig(props);
         } else {
@@ -79,7 +77,7 @@ public class ConfigService {
         }
       }
     } catch (IOException e) {
-      logger.error("設定ファイルの読み込みに失敗しました: {}", e.getMessage());
+      log.error("設定ファイルの読み込みに失敗しました: {}", e.getMessage());
     }
 
     return props;
@@ -95,7 +93,7 @@ public class ConfigService {
     // 設定ファイルを保存
     try (FileOutputStream fos = new FileOutputStream(SEND_CONFIG_PATH)) {
       props.store(fos, "送信設定");
-      logger.debug("設定ファイルを保存しました: {}", SEND_CONFIG_PATH);
+      log.debug("設定ファイルを保存しました: {}", SEND_CONFIG_PATH);
     }
   }
 }

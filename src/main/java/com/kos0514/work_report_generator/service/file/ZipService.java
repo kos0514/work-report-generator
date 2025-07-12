@@ -14,8 +14,7 @@ import net.lingala.zip4j.model.ZipParameters;
 import net.lingala.zip4j.model.enums.CompressionLevel;
 import net.lingala.zip4j.model.enums.CompressionMethod;
 import net.lingala.zip4j.model.enums.EncryptionMethod;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
@@ -23,9 +22,8 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ZipService {
-
-  private static final Logger logger = LoggerFactory.getLogger(ZipService.class);
 
   private final ConfigService configService;
   private final FileService fileService;
@@ -63,7 +61,7 @@ public class ZipService {
       zipFile.addFile(new File(sourceFilePath), zipParameters);
     }
 
-    logger.info("パスワード付きZIPファイルを作成しました: {}", zipFilePath);
+    log.info("パスワード付きZIPファイルを作成しました: {}", zipFilePath);
     return password;
   }
 
@@ -110,6 +108,6 @@ public class ZipService {
     Path passwordFile = Paths.get(passwordDirPath, Constants.Files.PASSWORD_FILE_NAME);
     fileService.writeStringToFile(passwordFile, password);
 
-    logger.info("パスワードをファイルに保存しました: {}", passwordFile);
+    log.info("パスワードをファイルに保存しました: {}", passwordFile);
   }
 }
