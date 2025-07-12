@@ -9,8 +9,11 @@ import lombok.Value;
  */
 @Value
 public class Holiday {
-  LocalDate date; // 祝日月日
-  String name; // 祝日名称
+  /** 祝日月日 */
+  LocalDate date;
+
+  /** 祝日名称 */
+  String name;
 
   /**
    * 祝日を生成します

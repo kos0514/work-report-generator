@@ -2,6 +2,7 @@ package com.kos0514.work_report_generator.model;
 
 import com.kos0514.work_report_generator.model.value.TimeOfDay;
 import com.kos0514.work_report_generator.model.value.WorkDuration;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.util.Objects;
 import lombok.Value;
@@ -11,11 +12,20 @@ import lombok.Value;
  */
 @Value
 public class WorkRecord {
-  LocalDate date; // 日付
-  TimeOfDay startTime; // 開始時刻
-  TimeOfDay endTime; // 終了時刻
-  WorkDuration breakTime; // 休憩時間
-  String workContent; // 作業内容
+  /** 日付 */
+  LocalDate date;
+
+  /** 開始時刻 */
+  TimeOfDay startTime;
+
+  /** 終了時刻 */
+  TimeOfDay endTime;
+
+  /** 休憩時間 */
+  WorkDuration breakTime;
+
+  /** 作業内容 */
+  String workContent;
 
   /**
    * 文字列から作業記録を生成します
@@ -26,6 +36,8 @@ public class WorkRecord {
    * @param breakTimeStr 休憩時間（H:mm形式）
    * @param workContent 作業内容
    * @return WorkRecordインスタンス
+   * @throws NullPointerException 日付または作業内容がnullの場合
+   * @throws IllegalArgumentException 時刻形式が不正な場合、終了時刻が開始時刻より前の場合、または休憩時間が実労働時間より長い場合
    */
   public static WorkRecord of(
       LocalDate date,
@@ -38,6 +50,17 @@ public class WorkRecord {
     TimeOfDay endTime = TimeOfDay.of(endTimeStr);
     WorkDuration breakTime = WorkDuration.of(breakTimeStr);
     Objects.requireNonNull(workContent, "作業内容は必須です");
+
+    // 終了時刻が開始時刻より後であることを確認
+    if (endTime.getValue().isBefore(startTime.getValue())) {
+      throw new IllegalArgumentException("終了時刻は開始時刻より後である必要があります: " + startTimeStr + " -> " + endTimeStr);
+    }
+
+    // 休憩時間が実労働時間より短いことを確認
+    Duration workDuration = Duration.between(startTime.getValue(), endTime.getValue());
+    if (breakTime.getValue().compareTo(workDuration) > 0) {
+      throw new IllegalArgumentException("休憩時間は実労働時間より短い必要があります: " + breakTimeStr);
+    }
 
     return new WorkRecord(date, startTime, endTime, breakTime, workContent);
   }

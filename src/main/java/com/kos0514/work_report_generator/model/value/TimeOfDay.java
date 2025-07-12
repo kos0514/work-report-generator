@@ -12,9 +12,13 @@ import lombok.Value;
 @Value
 public class TimeOfDay {
 
+  /** 入力用の時刻フォーマッター（H:mm形式、例: "9:30"） */
   private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("H:mm");
+
+  /** 出力用の時刻フォーマッター（HH:mm形式、例: "09:30"） */
   private static final DateTimeFormatter OUTPUT_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
+  /** 時刻の内部表現 */
   LocalTime value;
 
   private TimeOfDay(LocalTime value) {

@@ -12,8 +12,10 @@ import lombok.Value;
 @Value
 public class WorkDuration {
 
-  private static final Pattern DURATION_PATTERN = Pattern.compile("(\\d+):(\\d{2})");
+  /** 時間形式（H:mm）を検証するための正規表現パターン（分は0-59の範囲） */
+  private static final Pattern DURATION_PATTERN = Pattern.compile("(\\d+):([0-5][0-9])");
 
+  /** 時間の内部表現 */
   Duration value;
 
   private WorkDuration(Duration value) {
@@ -25,7 +27,7 @@ public class WorkDuration {
    *
    * @param durationStr H:mm形式の時間文字列（例: "1:30"）
    * @return WorkDurationインスタンス
-   * @throws IllegalArgumentException 時間形式が不正な場合
+   * @throws IllegalArgumentException 時間形式が不正な場合、または時間が3時間を超える場合
    */
   public static WorkDuration of(String durationStr) {
     Objects.requireNonNull(durationStr, "時間文字列は必須です");
@@ -38,8 +40,9 @@ public class WorkDuration {
     int hours = Integer.parseInt(matcher.group(1));
     int minutes = Integer.parseInt(matcher.group(2));
 
-    if (minutes >= 60) {
-      throw new IllegalArgumentException("分は0-59の範囲で指定してください: " + durationStr);
+    // 時間が3時間を超える場合はエラー
+    if (hours > 3 || (hours == 3 && minutes > 0)) {
+      throw new IllegalArgumentException("時間は3時間以下である必要があります: " + durationStr + " だったら休んでください");
     }
 
     Duration duration = Duration.ofHours(hours).plusMinutes(minutes);
