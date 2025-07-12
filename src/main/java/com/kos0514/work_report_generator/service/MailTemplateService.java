@@ -7,6 +7,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
@@ -78,8 +80,19 @@ public class MailTemplateService {
         fileService.createDirectoryIfNotExists(templateDir);
 
         Path templateFile = Paths.get(MAIL_TEMPLATE_DIR, Constants.Files.MAIL_TEMPLATE_FILE);
+
+        // テンプレートファイルが存在しない場合、リソースからコピーする
         if (!fileService.exists(templateFile)) {
-            throw new IOException("テンプレートファイルが見つかりません: " + templateFile);
+            logger.info("メールテンプレートファイルが見つかりません。デフォルトテンプレートを作成します: {}", templateFile);
+            try (InputStream templateStream = getClass().getResourceAsStream(Constants.Files.MAIL_TEMPLATE_TEMPLATE_PATH)) {
+                if (templateStream != null) {
+                    String templateContent = new String(templateStream.readAllBytes(), StandardCharsets.UTF_8);
+                    fileService.writeStringToFile(templateFile, templateContent);
+                    logger.info("デフォルトメールテンプレートを作成しました: {}", templateFile);
+                } else {
+                    throw new IOException("デフォルトメールテンプレートが見つかりません: " + Constants.Files.MAIL_TEMPLATE_TEMPLATE_PATH);
+                }
+            }
         }
 
         String content = fileService.readStringFromFile(templateFile);

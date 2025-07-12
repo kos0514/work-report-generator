@@ -22,19 +22,15 @@ public final class Constants {
     public static final String MAIL_DIR = "mail";
     public static final String SEND_CONFIG_FILE = "send-config.properties";
 
-
     // テンプレートファイル
-   public static final String SEND_CONFIG_TEMPLATE_PATH = "/templates/send-config.template.properties";
+    public static final String SEND_CONFIG_TEMPLATE_PATH = "/templates/send-config.template.properties";
+    public static final String MAIL_TEMPLATE_TEMPLATE_PATH = "/templates/mail_template.txt";
 
     // メールテンプレートファイル
     public static final String MAIL_TEMPLATE_FILE = "mail_template.txt";
 
     // 出力ファイル名
     public static final String MAIL_COMBINED_FILE = "mail_content.txt";
-    // 以下は互換性のために残しています
-    public static final String MAIL_SUBJECT_FILE = "mail_subject.txt";
-    public static final String MAIL_BODY_FILE = "mail_body.txt";
-    public static final String PASSWORD_MAIL_BODY_FILE = "password_mail_body.txt";
 
     // テンプレート区切り文字
     public static final String TEMPLATE_DELIMITER = "--------";
