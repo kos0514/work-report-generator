@@ -1,5 +1,6 @@
 package com.kos0514.work_report_generator.service;
 
+import com.kos0514.work_report_generator.service.config.UserInputService;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;

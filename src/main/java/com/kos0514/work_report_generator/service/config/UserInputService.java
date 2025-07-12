@@ -1,4 +1,4 @@
-package com.kos0514.work_report_generator.service;
+package com.kos0514.work_report_generator.service.config;
 
 /**
  * ユーザー入力を処理するサービスのインターフェース

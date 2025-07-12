@@ -1,7 +1,7 @@
 package com.kos0514.work_report_generator.command;
 
-import com.kos0514.work_report_generator.service.ReportService;
-import com.kos0514.work_report_generator.service.SendExcelFileService;
+import com.kos0514.work_report_generator.service.report.ReportService;
+import com.kos0514.work_report_generator.service.send_file.SendExcelFileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;

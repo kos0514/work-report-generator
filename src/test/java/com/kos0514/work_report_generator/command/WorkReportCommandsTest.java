@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.kos0514.work_report_generator.service.ReportService;
-import com.kos0514.work_report_generator.service.SendExcelFileService;
+import com.kos0514.work_report_generator.service.report.ReportService;
+import com.kos0514.work_report_generator.service.send_file.SendExcelFileService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

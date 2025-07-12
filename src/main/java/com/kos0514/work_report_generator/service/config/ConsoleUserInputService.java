@@ -1,8 +1,8 @@
-package com.kos0514.work_report_generator.service;
+package com.kos0514.work_report_generator.service.config;
 
 import jakarta.annotation.PreDestroy;
-import org.springframework.stereotype.Service;
 import java.util.Scanner;
+import org.springframework.stereotype.Service;
 
 /**
  * コンソールからのユーザー入力を処理するUserInputServiceの実装
