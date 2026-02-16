@@ -42,7 +42,7 @@ dependencies {
 	implementation 'com.fasterxml.jackson.core:jackson-databind'
 
 	// ZIP圧縮とパスワード保護
-	implementation 'net.lingala.zip4j:zip4j:2.11.5'
+	implementation 'net.lingala.zip4j:zip4j:2.11.6'
 
 	// Lombok
 	compileOnly 'org.projectlombok:lombok'
